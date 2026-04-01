@@ -247,7 +247,20 @@ class ErrorResponse:
 
 > For the complete `app/common.py` (including `Errc` enum and `Pagination`), see `cli.md` or `web.md`
 
-### Step 6: Create app/api/common.py
+### Step 6: Create app/api/__init__.py
+
+Create `app/api/__init__.py` with the following content:
+
+```python
+"""API module"""
+
+# Add API client class exports here, e.g.:
+# from app.api.{Name}Api import {Name}Api
+
+__all__ = []
+```
+
+### Step 7: Create app/api/common.py
 
 Create `app/api/common.py` with the following content:
 
@@ -265,9 +278,9 @@ class Errc(Enum):
         return self.value
 ```
 
-### Step 7: Create app/api.py
+### Step 8: Create app/api/api.py
 
-Create `app/api.py` with the following content:
+Create `app/api/api.py` with the following content:
 
 ```python
 """API base classes - InternalApi for SuccessResponse/ErrorResponse format APIs, ExternalApi for raw JSON APIs."""
@@ -793,13 +806,13 @@ class ExternalApi:
             raise Error(str(ApiErrc.API_REQUEST_FAILED), message) from e
 ```
 
-### Step 8: Create Database Layer
+### Step 9: Create Database Layer
 
 This step is optional for both CLI and Web. Only execute when the user chose a database in Step 1. Skip if None was chosen.
 
 Create the database layer files in `app/db/`:
 
-#### 8.1 Create `app/db/__init__.py`
+#### 9.1 Create `app/db/__init__.py`
 
 ```python
 """Database module"""
@@ -809,7 +822,7 @@ from app.db.DB import DB
 __all__ = ["DB"]
 ```
 
-#### 8.2 Create `app/db/DB.py`
+#### 9.2 Create `app/db/DB.py`
 
 ```python
 from abc import ABC, abstractmethod
@@ -878,7 +891,7 @@ class DB(ABC):
         pass
 ```
 
-#### 8.3 Create `app/db/common.py`
+#### 9.3 Create `app/db/common.py`
 
 ```python
 """Database module common error codes"""
@@ -912,13 +925,13 @@ class Errc(Enum):
         return self.value
 ```
 
-#### 8.4 Create `app/db/{Name}DB.py` (Optional)
+#### 9.4 Create `app/db/{Name}DB.py` (Optional)
 
 Only execute this step if the user selected a database in Step 1 (user chose SQLite/DolphinDB).
 
 Based on the database type selected by the user, create the corresponding database implementation class (e.g., `SqliteDB.py`) following the steps in `details/db/create-sqlite-database.md`.
 
-### Step 9: Create Background Task Base Class
+### Step 10: Create Background Task Base Class
 
 This step is optional for both CLI and Web. Only execute when the user chose a database in Step 1.
 
@@ -970,7 +983,7 @@ class Task(ABC):
         return self._running
 ```
 
-### Step 10: Create app/main.py
+### Step 11: Create app/main.py
 
 > **⚠️ CLI vs Web Difference — Completely Different**
 > - **CLI**: Uses `asyncio.run(main())` to start a pure async program
@@ -1128,8 +1141,7 @@ Update `app/api/__init__.py` to export the newly created API client class. This 
 """API module"""
 
 # Add API client class exports here, e.g.:
-# from app.api.InternalApi import InternalApi
-# from app.api.ExternalApi import ExternalApi
+# from app.api.{Name}Api import {Name}Api
 
 __all__ = []
 ```
@@ -1138,11 +1150,10 @@ __all__ = []
 
 ```python
 # ✅ Correct: Use shorter import path
-from app.api import InternalApi, ExternalApi
+from app.api import {Name}Api
 
 # ❌ Incorrect: Do not use full module path
-from app.api.InternalApi import InternalApi
-from app.api.ExternalApi import ExternalApi
+from app.api.{Name}Api import {Name}Api
 ```
 
 ### Step 5: Add Configuration

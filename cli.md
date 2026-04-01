@@ -21,10 +21,10 @@ If the user chooses **None**, skip all database-related steps (Step 8, Step 9, d
 project/
 ├── app/
 │   ├── api/
+│   │   ├── api.py                  # InternalApi and ExternalApi base classes for HTTP API clients
 │   │   ├── common.py              # API common utilities and constants
 │   │   ├── {Name}Api.py            # API client classes for accessing external interfaces
 │   │   └── __init__.py             # Package initialization
-│   ├── api.py                      # InternalApi and ExternalApi base classes for HTTP API clients
 │   ├── common.py                   # Application-level common utilities and constants
 │   ├── db/
 │   │   ├── common.py               # Database common utilities and constants

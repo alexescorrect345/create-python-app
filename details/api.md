@@ -16,7 +16,7 @@
 
 #### Type 1: InternalApi
 
-`InternalApi` is a base class defined in `app/api.py` (see Step 7 in web.md / Step 6 in cli.md), providing `_get`, `_post`, `_put`, `_delete` methods that encapsulate HTTP requests for `SuccessResponse`/`ErrorResponse` format APIs. All internal API clients must subclass `InternalApi` to implement interface access.
+`InternalApi` is a base class defined in `app/api/api.py` (see Step 8 in SKILL.md), providing `_get`, `_post`, `_put`, `_delete` methods that encapsulate HTTP requests for `SuccessResponse`/`ErrorResponse` format APIs. All internal API clients must subclass `InternalApi` to implement interface access.
 
 **Characteristics**:
 - Response format is `SuccessResponse` or `ErrorResponse`
@@ -26,7 +26,7 @@
 
 #### Type 2: ExternalApi
 
-`ExternalApi` is a base class defined in `app/api.py` (see Step 7 in web.md / Step 6 in cli.md), providing `_get`, `_post`, `_put`, `_delete` methods that encapsulate HTTP requests and return raw JSON responses. All external API clients must subclass `ExternalApi` to implement interface access.
+`ExternalApi` is a base class defined in `app/api/api.py` (see Step 8 in SKILL.md), providing `_get`, `_post`, `_put`, `_delete` methods that encapsulate HTTP requests and return raw JSON responses. All external API clients must subclass `ExternalApi` to implement interface access.
 
 **Characteristics**:
 - Directly return raw `response.json()`
@@ -80,13 +80,13 @@ Where `{name}` comes from the `{name}Api.py` filename.
 
 ### Complete Derived InternalApi Template
 
-All InternalApi subclasses inherit from `app.api.InternalApi` base class. Subclasses only need to implement business methods by calling `self._get()`, `self._post()`, `self._put()`, `self._delete()`.
+All InternalApi subclasses inherit from `app.api.api.InternalApi` base class. Subclasses only need to implement business methods by calling `self._get()`, `self._post()`, `self._put()`, `self._delete()`.
 
 ```python
 """User API Client - Calls internal user APIs"""
 from typing import Dict, Any, List, Optional
 
-from app.api import InternalApi
+from app.api.api import InternalApi
 
 
 class UserApi(InternalApi):
@@ -180,13 +180,13 @@ class UserApi(InternalApi):
 
 ### Complete Derived ExternalApi Template
 
-All ExternalApi subclasses inherit from `app.api.ExternalApi` base class. Subclasses only need to implement business methods by calling `self._get()`, `self._post()`, `self._put()`, `self._delete()`.
+All ExternalApi subclasses inherit from `app.api.api.ExternalApi` base class. Subclasses only need to implement business methods by calling `self._get()`, `self._post()`, `self._put()`, `self._delete()`.
 
 ```python
 """MyExternal API Client - Calls third-party APIs"""
 from typing import Dict, Any, List, Optional
 
-from app.api import ExternalApi
+from app.api.api import ExternalApi
 
 
 class MyExternalApi(ExternalApi):
