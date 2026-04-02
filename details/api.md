@@ -21,7 +21,7 @@
 **Characteristics**:
 - Response format is `SuccessResponse` or `ErrorResponse`
 - Base class methods automatically check the `code` field: empty string means success, non-empty means error
-- On success, return the content of the `data` field
+- On success, return the complete `SuccessResponse` object (caller accesses `.data` for payload)
 - On error, throw an `Error` exception
 
 #### Type 2: ExternalApi
@@ -114,12 +114,12 @@ class UserApi(InternalApi):
         Raises:
             Error: API request failed or ErrorResponse
         """
-        data = await self._post('/users', {
+        response = await self._post('/users', {
             "username": username,
             "password": password,
             "email": email
         })
-        return data["id"]
+        return response.data["id"]
 
     async def update_user_by_id(self, id: int, params: Dict[str, Any]) -> None:
         """Update user by ID
@@ -151,12 +151,13 @@ class UserApi(InternalApi):
             id: User ID
 
         Returns:
-            User info dict (SuccessResponse.data field content)
+            User info dict (via response.data)
 
         Raises:
             Error: API request failed or ErrorResponse
         """
-        return await self._get(f'/users/{id}')
+        response = await self._get(f'/users/{id}')
+        return response.data
 
     async def find_user(
         self,
@@ -170,12 +171,13 @@ class UserApi(InternalApi):
                 - status: User status (optional)
 
         Returns:
-            User info list
+            User info list (via response.data)
 
         Raises:
             Error: API request failed or ErrorResponse
         """
-        return await self._get('/users', params=params)
+        response = await self._get('/users', params=params)
+        return response.data
 ```
 
 ### Complete Derived ExternalApi Template

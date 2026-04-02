@@ -342,7 +342,7 @@ class InternalApi:
             headers: Request headers
 
         Returns:
-            SuccessResponse.data field content
+            SuccessResponse object
 
         Raises:
             Error: API request failed or ErrorResponse
@@ -373,7 +373,7 @@ class InternalApi:
 
                 success_response = SuccessResponse.from_dict(result)
                 self._logger.info(f"[{elapsed:.3f}s]succeeded to get with url={full_url}")
-                return success_response.data
+                return success_response
 
         except Error:
             raise
@@ -404,7 +404,7 @@ class InternalApi:
             headers: Request headers
 
         Returns:
-            SuccessResponse.data field content
+            SuccessResponse object
 
         Raises:
             Error: API request failed or ErrorResponse
@@ -435,7 +435,7 @@ class InternalApi:
 
                 success_response = SuccessResponse.from_dict(result)
                 self._logger.info(f"[{elapsed:.3f}s]succeeded to post with url={full_url}")
-                return success_response.data
+                return success_response
 
         except Error:
             raise
@@ -466,7 +466,7 @@ class InternalApi:
             headers: Request headers
 
         Returns:
-            SuccessResponse.data field content
+            SuccessResponse object
 
         Raises:
             Error: API request failed or ErrorResponse
@@ -497,7 +497,7 @@ class InternalApi:
 
                 success_response = SuccessResponse.from_dict(result)
                 self._logger.info(f"[{elapsed:.3f}s]succeeded to put with url={full_url}")
-                return success_response.data
+                return success_response
 
         except Error:
             raise
