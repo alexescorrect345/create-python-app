@@ -92,7 +92,7 @@ timeout_s = 30.0  # Database operation timeout (seconds)
 
 ### Step 5: app/common.py Errc Enum (CLI)
 
-> Note: `Error`, `SuccessResponse`, `ErrorResponse` classes are shared and defined in `SKILL.md` Step 5. Only the `Errc` enum differs.
+> Note: `Error`, `SuccessResponse`, `ErrorResponse`, `Pagination` classes are shared and defined in `SKILL.md` Step 5. Only the `Errc` enum differs.
 
 ```python
 class Errc(Enum):

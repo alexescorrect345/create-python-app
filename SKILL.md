@@ -147,9 +147,8 @@ main = "DEBUG"  # config.dev.toml, supports DEBUG, INFO, WARNING, ERROR, CRITICA
 
 > **⚠️ CLI vs Web Difference**
 > - The `Errc` enum error codes differ
-> - **Web** additionally includes the `Pagination` dataclass
 >
-> Below are the shared classes (`Error`, `SuccessResponse`, `ErrorResponse`). For `Errc` enum and `Pagination`, see `cli.md` or `web.md`
+> Below are the shared classes (`Error`, `SuccessResponse`, `ErrorResponse`, `Pagination`). For `Errc` enum, see `cli.md` or `web.md`
 
 #### Shared Classes
 
@@ -245,7 +244,46 @@ class ErrorResponse:
         return f'ErrorResponse(code={self.code}, message={self.message}, timestamp={self.timestamp})'
 ```
 
-> For the complete `app/common.py` (including `Errc` enum and `Pagination`), see `cli.md` or `web.md`
+#### Pagination
+
+```python
+@dataclass
+class Pagination:
+    """Pagination info for API response"""
+
+    page: int
+    page_size: int
+    total: int
+    total_pages: int
+    has_next: bool
+    has_prev: bool
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary
+
+        Returns:
+            Pagination dictionary
+        """
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Pagination":
+        """Create instance from dictionary
+
+        Args:
+            data: Dictionary containing pagination data
+
+        Returns:
+            Pagination instance
+        """
+        return cls(**data)
+
+    def __str__(self) -> str:
+        """Return string representation"""
+        return f'Pagination(page={self.page}, page_size={self.page_size}, total={self.total}, total_pages={self.total_pages}, has_next={self.has_next}, has_prev={self.has_prev})'
+```
+
+> For the `Errc` enum definition, see `cli.md` or `web.md`
 
 ### Step 6: Create app/api/__init__.py
 
