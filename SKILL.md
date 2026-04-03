@@ -397,7 +397,7 @@ class InternalApi:
                 elapsed = time.time() - start_time
                 if not (200 <= response.status < 300):
                     error_text = await response.text()
-                    message = f"[{elapsed:.3f}s]failed to get with url={full_url}, status={response.status}, error={error_text}"
+                    message = f"[{elapsed:.3f}s]failed to get with url={full_url}, params={params}, headers={headers}, status={response.status}, error={error_text}"
                     self._logger.error(message)
                     raise Error(str(ApiErrc.API_REQUEST_FAILED), message)
 
@@ -405,12 +405,12 @@ class InternalApi:
 
                 if result["code"] != "":
                     error_response = ErrorResponse.from_dict(result)
-                    message = f"[{elapsed:.3f}s]failed to get with API error: code={error_response.code}, message={error_response.message}, url={full_url}"
+                    message = f"[{elapsed:.3f}s]failed to get with API error: code={error_response.code}, message={error_response.message}, url={full_url}, params={params}, headers={headers}"
                     self._logger.error(message)
                     raise Error(error_response.code, message)
 
                 success_response = SuccessResponse.from_dict(result)
-                self._logger.info(f"[{elapsed:.3f}s]succeeded to get with url={full_url}")
+                self._logger.debug(f"[{elapsed:.3f}s]succeeded to get with url={full_url}, params={params}, headers={headers}")
                 return success_response
 
         except Error:
@@ -418,13 +418,13 @@ class InternalApi:
 
         except TimeoutError as e:
             elapsed = time.time() - start_time
-            message = f"[{elapsed:.3f}s]timeout to get with url={full_url}"
+            message = f"[{elapsed:.3f}s]timeout to get with url={full_url}, params={params}, headers={headers}"
             self._logger.error(message)
             raise Error(str(CommonErrc.TIMEOUT), message) from e
 
         except Exception as e:
             elapsed = time.time() - start_time
-            message = f"[{elapsed:.3f}s]failed to get with url={full_url}"
+            message = f"[{elapsed:.3f}s]failed to get with url={full_url}, params={params}, headers={headers}"
             self._logger.error(message)
             raise Error(str(ApiErrc.API_REQUEST_FAILED), message) from e
 
@@ -459,7 +459,7 @@ class InternalApi:
                 elapsed = time.time() - start_time
                 if not (200 <= response.status < 300):
                     error_text = await response.text()
-                    message = f"[{elapsed:.3f}s]failed to post with url={full_url}, status={response.status}, error={error_text}"
+                    message = f"[{elapsed:.3f}s]failed to post with url={full_url}, payload={payload}, headers={headers}, status={response.status}, error={error_text}"
                     self._logger.error(message)
                     raise Error(str(ApiErrc.API_REQUEST_FAILED), message)
 
@@ -467,12 +467,12 @@ class InternalApi:
 
                 if result["code"] != "":
                     error_response = ErrorResponse.from_dict(result)
-                    message = f"[{elapsed:.3f}s]failed to post with API error: code={error_response.code}, message={error_response.message}, url={full_url}"
+                    message = f"[{elapsed:.3f}s]failed to post with API error: code={error_response.code}, message={error_response.message}, url={full_url}, payload={payload}, headers={headers}"
                     self._logger.error(message)
                     raise Error(error_response.code, message)
 
                 success_response = SuccessResponse.from_dict(result)
-                self._logger.info(f"[{elapsed:.3f}s]succeeded to post with url={full_url}")
+                self._logger.debug(f"[{elapsed:.3f}s]succeeded to post with url={full_url}, payload={payload}, headers={headers}")
                 return success_response
 
         except Error:
@@ -480,13 +480,13 @@ class InternalApi:
 
         except TimeoutError as e:
             elapsed = time.time() - start_time
-            message = f"[{elapsed:.3f}s]timeout to post with url={full_url}"
+            message = f"[{elapsed:.3f}s]timeout to post with url={full_url}, payload={payload}, headers={headers}"
             self._logger.error(message)
             raise Error(str(CommonErrc.TIMEOUT), message) from e
 
         except Exception as e:
             elapsed = time.time() - start_time
-            message = f"[{elapsed:.3f}s]failed to post with url={full_url}"
+            message = f"[{elapsed:.3f}s]failed to post with url={full_url}, payload={payload}, headers={headers}"
             self._logger.error(message)
             raise Error(str(ApiErrc.API_REQUEST_FAILED), message) from e
 
@@ -521,7 +521,7 @@ class InternalApi:
                 elapsed = time.time() - start_time
                 if not (200 <= response.status < 300):
                     error_text = await response.text()
-                    message = f"[{elapsed:.3f}s]failed to put with url={full_url}, status={response.status}, error={error_text}"
+                    message = f"[{elapsed:.3f}s]failed to put with url={full_url}, payload={payload}, headers={headers}, status={response.status}, error={error_text}"
                     self._logger.error(message)
                     raise Error(str(ApiErrc.API_REQUEST_FAILED), message)
 
@@ -529,12 +529,12 @@ class InternalApi:
 
                 if result["code"] != "":
                     error_response = ErrorResponse.from_dict(result)
-                    message = f"[{elapsed:.3f}s]failed to put with API error: code={error_response.code}, message={error_response.message}, url={full_url}"
+                    message = f"[{elapsed:.3f}s]failed to put with API error: code={error_response.code}, message={error_response.message}, url={full_url}, payload={payload}, headers={headers}"
                     self._logger.error(message)
                     raise Error(error_response.code, message)
 
                 success_response = SuccessResponse.from_dict(result)
-                self._logger.info(f"[{elapsed:.3f}s]succeeded to put with url={full_url}")
+                self._logger.debug(f"[{elapsed:.3f}s]succeeded to put with url={full_url}, payload={payload}, headers={headers}")
                 return success_response
 
         except Error:
@@ -542,13 +542,13 @@ class InternalApi:
 
         except TimeoutError as e:
             elapsed = time.time() - start_time
-            message = f"[{elapsed:.3f}s]timeout to put with url={full_url}"
+            message = f"[{elapsed:.3f}s]timeout to put with url={full_url}, payload={payload}, headers={headers}"
             self._logger.error(message)
             raise Error(str(CommonErrc.TIMEOUT), message) from e
 
         except Exception as e:
             elapsed = time.time() - start_time
-            message = f"[{elapsed:.3f}s]failed to put with url={full_url}"
+            message = f"[{elapsed:.3f}s]failed to put with url={full_url}, payload={payload}, headers={headers}"
             self._logger.error(message)
             raise Error(str(ApiErrc.API_REQUEST_FAILED), message) from e
 
@@ -578,24 +578,24 @@ class InternalApi:
                 elapsed = time.time() - start_time
                 if not (200 <= response.status < 300):
                     error_text = await response.text()
-                    message = f"[{elapsed:.3f}s]failed to delete with url={full_url}, status={response.status}, error={error_text}"
+                    message = f"[{elapsed:.3f}s]failed to delete with url={full_url}, headers={headers}, status={response.status}, error={error_text}"
                     self._logger.error(message)
                     raise Error(str(ApiErrc.API_REQUEST_FAILED), message)
 
-                self._logger.info(f"[{elapsed:.3f}s]succeeded to delete with url={full_url}")
+                self._logger.debug(f"[{elapsed:.3f}s]succeeded to delete with url={full_url}, headers={headers}")
 
         except Error:
             raise
 
         except TimeoutError as e:
             elapsed = time.time() - start_time
-            message = f"[{elapsed:.3f}s]timeout to delete with url={full_url}"
+            message = f"[{elapsed:.3f}s]timeout to delete with url={full_url}, headers={headers}"
             self._logger.error(message)
             raise Error(str(CommonErrc.TIMEOUT), message) from e
 
         except Exception as e:
             elapsed = time.time() - start_time
-            message = f"[{elapsed:.3f}s]failed to delete with url={full_url}"
+            message = f"[{elapsed:.3f}s]failed to delete with url={full_url}, headers={headers}"
             self._logger.error(message)
             raise Error(str(ApiErrc.API_REQUEST_FAILED), message) from e
 
@@ -665,12 +665,12 @@ class ExternalApi:
                 elapsed = time.time() - start_time
                 if not (200 <= response.status < 300):
                     error_text = await response.text()
-                    message = f"[{elapsed:.3f}s]failed to get with url={full_url}, status={response.status}, error={error_text}"
+                    message = f"[{elapsed:.3f}s]failed to get with url={full_url}, params={params}, headers={headers}, status={response.status}, error={error_text}"
                     self._logger.error(message)
                     raise Error(str(ApiErrc.API_REQUEST_FAILED), message)
 
                 result = await response.json()
-                self._logger.info(f"[{elapsed:.3f}s]succeeded to get with url={full_url}")
+                self._logger.debug(f"[{elapsed:.3f}s]succeeded to get with url={full_url}, params={params}, headers={headers}")
                 return result
 
         except Error:
@@ -678,13 +678,13 @@ class ExternalApi:
 
         except TimeoutError as e:
             elapsed = time.time() - start_time
-            message = f"[{elapsed:.3f}s]timeout to get with url={full_url}"
+            message = f"[{elapsed:.3f}s]timeout to get with url={full_url}, params={params}, headers={headers}"
             self._logger.error(message)
             raise Error(str(CommonErrc.TIMEOUT), message) from e
 
         except Exception as e:
             elapsed = time.time() - start_time
-            message = f"[{elapsed:.3f}s]failed to get with url={full_url}"
+            message = f"[{elapsed:.3f}s]failed to get with url={full_url}, params={params}, headers={headers}"
             self._logger.error(message)
             raise Error(str(ApiErrc.API_REQUEST_FAILED), message) from e
 
@@ -719,12 +719,12 @@ class ExternalApi:
                 elapsed = time.time() - start_time
                 if not (200 <= response.status < 300):
                     error_text = await response.text()
-                    message = f"[{elapsed:.3f}s]failed to post with url={full_url}, status={response.status}, error={error_text}"
+                    message = f"[{elapsed:.3f}s]failed to post with url={full_url}, payload={payload}, headers={headers}, status={response.status}, error={error_text}"
                     self._logger.error(message)
                     raise Error(str(ApiErrc.API_REQUEST_FAILED), message)
 
                 result = await response.json()
-                self._logger.info(f"[{elapsed:.3f}s]succeeded to post with url={full_url}")
+                self._logger.debug(f"[{elapsed:.3f}s]succeeded to post with url={full_url}, payload={payload}, headers={headers}")
                 return result
 
         except Error:
@@ -732,13 +732,13 @@ class ExternalApi:
 
         except TimeoutError as e:
             elapsed = time.time() - start_time
-            message = f"[{elapsed:.3f}s]timeout to post with url={full_url}"
+            message = f"[{elapsed:.3f}s]timeout to post with url={full_url}, payload={payload}, headers={headers}"
             self._logger.error(message)
             raise Error(str(CommonErrc.TIMEOUT), message) from e
 
         except Exception as e:
             elapsed = time.time() - start_time
-            message = f"[{elapsed:.3f}s]failed to post with url={full_url}"
+            message = f"[{elapsed:.3f}s]failed to post with url={full_url}, payload={payload}, headers={headers}"
             self._logger.error(message)
             raise Error(str(ApiErrc.API_REQUEST_FAILED), message) from e
 
@@ -773,12 +773,12 @@ class ExternalApi:
                 elapsed = time.time() - start_time
                 if not (200 <= response.status < 300):
                     error_text = await response.text()
-                    message = f"[{elapsed:.3f}s]failed to put with url={full_url}, status={response.status}, error={error_text}"
+                    message = f"[{elapsed:.3f}s]failed to put with url={full_url}, payload={payload}, headers={headers}, status={response.status}, error={error_text}"
                     self._logger.error(message)
                     raise Error(str(ApiErrc.API_REQUEST_FAILED), message)
 
                 result = await response.json()
-                self._logger.info(f"[{elapsed:.3f}s]succeeded to put with url={full_url}")
+                self._logger.debug(f"[{elapsed:.3f}s]succeeded to put with url={full_url}, payload={payload}, headers={headers}")
                 return result
 
         except Error:
@@ -786,13 +786,13 @@ class ExternalApi:
 
         except TimeoutError as e:
             elapsed = time.time() - start_time
-            message = f"[{elapsed:.3f}s]timeout to put with url={full_url}"
+            message = f"[{elapsed:.3f}s]timeout to put with url={full_url}, payload={payload}, headers={headers}"
             self._logger.error(message)
             raise Error(str(CommonErrc.TIMEOUT), message) from e
 
         except Exception as e:
             elapsed = time.time() - start_time
-            message = f"[{elapsed:.3f}s]failed to put with url={full_url}"
+            message = f"[{elapsed:.3f}s]failed to put with url={full_url}, payload={payload}, headers={headers}"
             self._logger.error(message)
             raise Error(str(ApiErrc.API_REQUEST_FAILED), message) from e
 
@@ -822,24 +822,24 @@ class ExternalApi:
                 elapsed = time.time() - start_time
                 if not (200 <= response.status < 300):
                     error_text = await response.text()
-                    message = f"[{elapsed:.3f}s]failed to delete with url={full_url}, status={response.status}, error={error_text}"
+                    message = f"[{elapsed:.3f}s]failed to delete with url={full_url}, headers={headers}, status={response.status}, error={error_text}"
                     self._logger.error(message)
                     raise Error(str(ApiErrc.API_REQUEST_FAILED), message)
 
-                self._logger.info(f"[{elapsed:.3f}s]succeeded to delete with url={full_url}")
+                self._logger.debug(f"[{elapsed:.3f}s]succeeded to delete with url={full_url}, headers={headers}")
 
         except Error:
             raise
 
         except TimeoutError as e:
             elapsed = time.time() - start_time
-            message = f"[{elapsed:.3f}s]timeout to delete with url={full_url}"
+            message = f"[{elapsed:.3f}s]timeout to delete with url={full_url}, headers={headers}"
             self._logger.error(message)
             raise Error(str(CommonErrc.TIMEOUT), message) from e
 
         except Exception as e:
             elapsed = time.time() - start_time
-            message = f"[{elapsed:.3f}s]failed to delete with url={full_url}"
+            message = f"[{elapsed:.3f}s]failed to delete with url={full_url}, headers={headers}"
             self._logger.error(message)
             raise Error(str(ApiErrc.API_REQUEST_FAILED), message) from e
 ```
