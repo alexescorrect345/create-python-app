@@ -107,9 +107,9 @@ path = "./data/main.db"  # SQLite database file path
 timeout_s = 30.0  # Database operation timeout (seconds)
 ```
 
-### Step 5: app/common.py Errc Enum and Pagination (Web)
+### Step 5: app/common.py Errc Enum (Web)
 
-> Note: `Error`, `SuccessResponse`, `ErrorResponse` classes are shared and defined in `SKILL.md` Step 5. Only the `Errc` enum and `Pagination` are Web-specific.
+> Note: `Error`, `SuccessResponse`, `ErrorResponse`, `Pagination` classes are shared and defined in `SKILL.md` Step 5. Only the `Errc` enum is Web-specific.
 
 ```python
 class Errc(Enum):
@@ -141,42 +141,6 @@ class Errc(Enum):
     def __str__(self) -> str:
         """Return error code string"""
         return self.value
-
-
-@dataclass
-class Pagination:
-    """Pagination info for HTTP API response"""
-
-    page: int
-    page_size: int
-    total: int
-    total_pages: int
-    has_next: bool
-    has_prev: bool
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary
-
-        Returns:
-            Pagination dictionary
-        """
-        return asdict(self)
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Pagination":
-        """Create instance from dictionary
-
-        Args:
-            data: Dictionary containing pagination data
-
-        Returns:
-            Pagination instance
-        """
-        return cls(**data)
-
-    def __str__(self) -> str:
-        """Return string representation"""
-        return f'Pagination(page={self.page}, page_size={self.page_size}, total={self.total}, total_pages={self.total_pages}, has_next={self.has_next}, has_prev={self.has_prev})'
 ```
 
 ### Step 6: Create app/middleware.py (Web Only)
