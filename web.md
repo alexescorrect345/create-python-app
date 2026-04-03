@@ -78,7 +78,7 @@ Only add the following database configuration if the user chose a database in St
 
 ```toml
 # Database configuration
-[service.db.sqlite]
+[service.db.sqlitedb]
 path = "./data/main.db"  # SQLite database file path
 timeout_s = 5.0  # Database operation timeout (seconds)
 ```
@@ -102,7 +102,7 @@ Only add the following database configuration if the user chose a database in St
 
 ```toml
 # Database configuration
-[service.db.sqlite]
+[service.db.sqlitedb]
 path = "./data/main.db"  # SQLite database file path
 timeout_s = 30.0  # Database operation timeout (seconds)
 ```
@@ -150,9 +150,11 @@ Create `app/middleware.py` with the following content:
 ```python
 """Middleware module: unified management of all middleware"""
 
-import time
 import logging
+import time
+
 from aiohttp import web
+
 from app.common import Errc, Error, ErrorResponse
 
 logger = logging.getLogger(__name__)

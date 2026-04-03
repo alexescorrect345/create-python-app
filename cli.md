@@ -68,7 +68,7 @@ Only add the following database configuration if the user chose a database in St
 
 ```toml
 # Database configuration
-[service.db.sqlite]
+[service.db.sqlitedb]
 path = "./data/main.db"  # SQLite database file path
 timeout_s = 5.0  # Database operation timeout (seconds)
 ```
@@ -85,7 +85,7 @@ Only add the following database configuration if the user chose a database in St
 
 ```toml
 # Database configuration
-[service.db.sqlite]
+[service.db.sqlitedb]
 path = "./data/main.db"  # SQLite database file path
 timeout_s = 30.0  # Database operation timeout (seconds)
 ```
@@ -173,14 +173,14 @@ async def main():
         # sqlite_db = SqliteDB(config=db_config)
         # await sqlite_db.connect()
 
-        logger.info('succeeded to start application')
+        logger.info(f'succeeded to start application with env={env}')
 
     except Error as e:
         logger.error(f'failed to handle business error with code={e.code}, message={e.message}')
         logger.exception(e)
 
     except Exception as e:
-        logger.error('failed to run application')
+        logger.error(f'failed to run application with env={env}')
         logger.exception(e)
 
 

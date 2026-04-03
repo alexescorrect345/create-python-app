@@ -106,12 +106,11 @@ user_dao.set_db(db=db)
 
 ```python
 import sys
-
 import logging
 
 from app.common import Error, Pagination
-from app.db.db import DB
 from app.db.common import Errc as DbErrc
+from app.db.DB import DB
 from app.feature.user import UserField
 
 class UserDao:
@@ -199,10 +198,10 @@ class UserDao:
 
             if 'username' in params:
                 updates.append('username = ?')
-                sql_params.append(params['username'])
+                sql_params.append(params["username"])
             if 'password' in params:
                 updates.append('password = ?')
-                sql_params.append(params['password'])
+                sql_params.append(params["password"])
 
             if not updates:
                 return
@@ -251,8 +250,8 @@ class UserDao:
                 self._logger.debug(f'succeeded to find user by id with id={id}, result=None')
                 return None
             result = UserField(
-                username=user_dict['username'],
-                password=user_dict['password']
+                username=user_dict["username"],
+                password=user_dict["password"]
             )
             self._logger.debug(f'succeeded to find user by id with id={id}, result={result}')
             return result
@@ -278,8 +277,8 @@ class UserDao:
                 self._logger.debug(f'succeeded to find user by username with username={username}, result=None')
                 return None
             result = UserField(
-                username=user_dict['username'],
-                password=user_dict['password']
+                username=user_dict["username"],
+                password=user_dict["password"]
             )
             self._logger.debug(f'succeeded to find user by username with username={username}, result={result}')
             return result

@@ -88,10 +88,11 @@ user_service.set_user_dao(user_dao=user_dao)
 ```python
 import sys
 import logging
+
 from app.common import Error, Pagination, Errc as CommonErrc
+from app.feature.user.common import Errc as UserErrc
 from app.feature.user.dao import UserDao
 from app.feature.user.field import UserField
-from app.feature.user.common import Errc as UserErrc
 
 class UserService:
     """User Service"""
@@ -144,7 +145,7 @@ class UserService:
 
         # Create user
         id = await self._user_dao.insert(user=user_field)
-        self._logger.info(f'insert user: {user_field.username}, id: {id}')
+        self._logger.info(f'succeeded to insert user with username={user_field.username}, id={id}')
 
         # Return user ID
         return id
@@ -185,7 +186,7 @@ class UserService:
 
         # Update user
         await self._user_dao.update_by_id(id, params=params)
-        self._logger.info(f'updated user: {id}, params: {params}')
+        self._logger.info(f'succeeded to update user with id={id}, params={params}')
 
         # Return updated user
         user_field = await self._user_dao.find_by_id(id)
@@ -212,7 +213,7 @@ class UserService:
 
         # Delete user
         await self._user_dao.delete_by_id(id)
-        self._logger.info(f'deleted user: {id}')
+        self._logger.info(f'succeeded to delete user with id={id}')
 
     async def find_by_id(self, id: int) -> UserField:
         """Find user by ID

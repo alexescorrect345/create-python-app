@@ -150,7 +150,7 @@ class UserTask(Task):
 
             self._logger.info(f'succeeded to execute task once in UserTask with checked_count={len(users)}')
         except Exception as e:
-            message = f'failed to execute task once in UserTask'
+            message = f'failed to execute task once in UserTask with config={self._config}'
             self._logger.error(message)
             self._logger.exception(e)
         finally:

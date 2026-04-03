@@ -65,13 +65,13 @@ class SqliteDB(DB):
         if "db_path" not in self._config:
             message = f"failed to validate config, missing required 'db_path' field, config keys: {list(self._config.keys())}"
             self._logger.error(message)
-            raise Error(code=str(Errc.MISSING_CONFIG), message=message)
+            raise Error(str(Errc.MISSING_CONFIG), message)
 
         db_path = self._config["db_path"]
         if not isinstance(db_path, (str, Path)):
             message = f'failed to validate config, db_path must be string or Path type, actual: {type(db_path).__name__}'
             self._logger.error(message)
-            raise Error(code=str(Errc.INVALID_TYPE), message=message)
+            raise Error(str(Errc.INVALID_TYPE), message)
 
         db_path = Path(db_path)
         check_same_thread = self._config.get("check_same_thread", True)
@@ -100,7 +100,7 @@ class SqliteDB(DB):
             self._connection = None
             message = f'failed to connect to sqlite database, db_path: {db_path}'
             self._logger.error(message)
-            raise Error(code=str(DbErrc.CONNECT_FAILED), message=message) from e
+            raise Error(str(DbErrc.CONNECT_FAILED), message) from e
 
     async def close(self) -> None:
         """Async close SQLite database connection
@@ -125,7 +125,7 @@ class SqliteDB(DB):
             except Exception as e:
                 message = f'failed to close sqlite database connection, db_path: {self._config.get("db_path", "unknown")}'
                 self._logger.error(message)
-                raise Error(code=str(DbErrc.DISCONNECT_FAILED), message=message) from e
+                raise Error(str(DbErrc.DISCONNECT_FAILED), message) from e
 
             finally:
                 self._connection = None
@@ -160,22 +160,22 @@ class SqliteDB(DB):
         if not isinstance(script, str):
             message = f'failed to validate script parameter, expected str type, actual: {type(script).__name__}'
             self._logger.error(message)
-            raise Error(code=str(Errc.INVALID_TYPE), message=message)
+            raise Error(str(Errc.INVALID_TYPE), message)
 
         if not script.strip():
             message = f'failed to execute script, script is empty, db_path: {self._config.get("db_path", "unknown")}'
             self._logger.error(message)
-            raise Error(code=str(DbErrc.MISSING_SCRIPT), message=message)
+            raise Error(str(DbErrc.MISSING_SCRIPT), message)
 
         if params is not None and not isinstance(params, tuple):
             message = f'failed to validate params parameter, expected tuple or None, actual: {type(params).__name__}'
             self._logger.error(message)
-            raise Error(code=str(Errc.INVALID_TYPE), message=message)
+            raise Error(str(Errc.INVALID_TYPE), message)
 
         if not self.is_connected or self._connection is None:
             message = f'attempted to execute script without database connection, db_path: {self._config.get("db_path", "unknown")}'
             self._logger.error(message)
-            raise Error(code=str(DbErrc.NOT_CONNECTED), message=message)
+            raise Error(str(DbErrc.NOT_CONNECTED), message)
 
         cursor: Optional[aiosqlite.Cursor] = None
 
@@ -223,7 +223,7 @@ class SqliteDB(DB):
 
             message = f'failed to execute script, db_path: {self._config.get("db_path", "unknown")}, script: {script.strip()}'
             self._logger.error(message)
-            raise Error(code=str(DbErrc.EXECUTION_FAILED), message=message) from e
+            raise Error(str(DbErrc.EXECUTION_FAILED), message) from e
 
         finally:
             if cursor is not None:
@@ -250,12 +250,12 @@ class SqliteDB(DB):
         if not isinstance(scripts, list):
             message = f'failed to validate scripts parameter, expected list type, actual: {type(scripts).__name__}'
             self._logger.error(message)
-            raise Error(code=str(Errc.INVALID_TYPE), message=message)
+            raise Error(str(Errc.INVALID_TYPE), message)
 
         if len(scripts) == 0:
             message = f'failed to validate scripts, list is empty, db_path: {self._config.get("db_path", "unknown")}'
             self._logger.error(message)
-            raise Error(code=str(DbErrc.MISSING_SCRIPT), message=message)
+            raise Error(str(DbErrc.MISSING_SCRIPT), message)
 
         if params_list is None:
             params_list = []
@@ -263,34 +263,34 @@ class SqliteDB(DB):
         if not isinstance(params_list, list):
             message = f'failed to validate params_list parameter, expected list or None, actual: {type(params_list).__name__}'
             self._logger.error(message)
-            raise Error(code=str(Errc.INVALID_TYPE), message=message)
+            raise Error(str(Errc.INVALID_TYPE), message)
 
         if len(params_list) != 0 and len(params_list) != len(scripts):
             message = f'failed to validate params_list, length {len(params_list)} must match scripts list length {len(scripts)}'
             self._logger.error(message)
-            raise Error(code=str(Errc.INVALID_TYPE), message=message)
+            raise Error(str(Errc.INVALID_TYPE), message)
 
         for i, script in enumerate(scripts):
             if not isinstance(script, str):
                 message = f'failed to validate scripts[{i}], expected str type, actual: {type(script).__name__}'
                 self._logger.error(message)
-                raise Error(code=str(Errc.INVALID_TYPE), message=message)
+                raise Error(str(Errc.INVALID_TYPE), message)
             if not script.strip():
                 message = f'failed to validate scripts[{i}], script is empty, db_path: {self._config.get("db_path", "unknown")}'
                 self._logger.error(message)
-                raise Error(code=str(DbErrc.MISSING_SCRIPT), message=message)
+                raise Error(str(DbErrc.MISSING_SCRIPT), message)
 
         if len(params_list) > 0:
             for i, param in enumerate(params_list):
                 if param is not None and not isinstance(param, tuple):
                     message = f'failed to validate params_list[{i}], expected tuple or None, actual: {type(param).__name__}'
                     self._logger.error(message)
-                    raise Error(code=str(Errc.INVALID_TYPE), message=message)
+                    raise Error(str(Errc.INVALID_TYPE), message)
 
         if not self.is_connected or self._connection is None:
             message = f'attempted to execute scripts without database connection, db_path: {self._config.get("db_path", "unknown")}'
             self._logger.error(message)
-            raise Error(code=str(DbErrc.NOT_CONNECTED), message=message)
+            raise Error(str(DbErrc.NOT_CONNECTED), message)
 
         cursor: Optional[aiosqlite.Cursor] = None
         result_list: List[List[Tuple[Any, ...]]] = []
@@ -350,7 +350,7 @@ class SqliteDB(DB):
 
             message = f'failed to batch execute scripts, db_path: {self._config.get("db_path", "unknown")}, script_count: {script_count}'
             self._logger.error(message)
-            raise Error(code=str(DbErrc.EXECUTION_FAILED), message=message) from e
+            raise Error(str(DbErrc.EXECUTION_FAILED), message) from e
 
         finally:
             if cursor is not None:
