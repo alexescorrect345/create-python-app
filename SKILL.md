@@ -395,7 +395,7 @@ class InternalApi:
         try:
             async with self._session.get(full_url, params=params, headers=headers) as response:
                 elapsed = time.time() - start_time
-                if response.status != 200:
+                if not (200 <= response.status < 300):
                     error_text = await response.text()
                     message = f"[{elapsed:.3f}s]failed to get with url={full_url}, status={response.status}, error={error_text}"
                     self._logger.error(message)
@@ -457,7 +457,7 @@ class InternalApi:
         try:
             async with self._session.post(full_url, json=payload, headers=headers) as response:
                 elapsed = time.time() - start_time
-                if response.status != 201:
+                if not (200 <= response.status < 300):
                     error_text = await response.text()
                     message = f"[{elapsed:.3f}s]failed to post with url={full_url}, status={response.status}, error={error_text}"
                     self._logger.error(message)
@@ -519,7 +519,7 @@ class InternalApi:
         try:
             async with self._session.put(full_url, json=payload, headers=headers) as response:
                 elapsed = time.time() - start_time
-                if response.status != 200:
+                if not (200 <= response.status < 300):
                     error_text = await response.text()
                     message = f"[{elapsed:.3f}s]failed to put with url={full_url}, status={response.status}, error={error_text}"
                     self._logger.error(message)
@@ -576,7 +576,7 @@ class InternalApi:
         try:
             async with self._session.delete(full_url, headers=headers) as response:
                 elapsed = time.time() - start_time
-                if response.status != 204:
+                if not (200 <= response.status < 300):
                     error_text = await response.text()
                     message = f"[{elapsed:.3f}s]failed to delete with url={full_url}, status={response.status}, error={error_text}"
                     self._logger.error(message)
@@ -663,7 +663,7 @@ class ExternalApi:
         try:
             async with self._session.get(full_url, params=params, headers=headers) as response:
                 elapsed = time.time() - start_time
-                if response.status != 200:
+                if not (200 <= response.status < 300):
                     error_text = await response.text()
                     message = f"[{elapsed:.3f}s]failed to get with url={full_url}, status={response.status}, error={error_text}"
                     self._logger.error(message)
@@ -717,7 +717,7 @@ class ExternalApi:
         try:
             async with self._session.post(full_url, json=payload, headers=headers) as response:
                 elapsed = time.time() - start_time
-                if response.status not in (200, 201):
+                if not (200 <= response.status < 300):
                     error_text = await response.text()
                     message = f"[{elapsed:.3f}s]failed to post with url={full_url}, status={response.status}, error={error_text}"
                     self._logger.error(message)
@@ -771,7 +771,7 @@ class ExternalApi:
         try:
             async with self._session.put(full_url, json=payload, headers=headers) as response:
                 elapsed = time.time() - start_time
-                if response.status not in (200, 201):
+                if not (200 <= response.status < 300):
                     error_text = await response.text()
                     message = f"[{elapsed:.3f}s]failed to put with url={full_url}, status={response.status}, error={error_text}"
                     self._logger.error(message)
@@ -820,7 +820,7 @@ class ExternalApi:
         try:
             async with self._session.delete(full_url, headers=headers) as response:
                 elapsed = time.time() - start_time
-                if response.status != 204:
+                if not (200 <= response.status < 300):
                     error_text = await response.text()
                     message = f"[{elapsed:.3f}s]failed to delete with url={full_url}, status={response.status}, error={error_text}"
                     self._logger.error(message)
