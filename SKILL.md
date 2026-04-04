@@ -381,7 +381,7 @@ class InternalApi:
         url: str,
         params: Optional[Dict[str, Any]] = None,
         headers: Optional[Dict[str, str]] = None,
-    ) -> Any:
+    ) -> SuccessResponse | ErrorResponse:
         """Send GET request
 
         Args:
@@ -390,10 +390,10 @@ class InternalApi:
             headers: Request headers
 
         Returns:
-            SuccessResponse object
+            SuccessResponse or ErrorResponse object
 
         Raises:
-            Error: API request failed or ErrorResponse
+            Error: API request failed
         """
         if not self._session:
             message = f'failed to find session with base_url={self._api_config["base_url"]}'
@@ -446,7 +446,7 @@ class InternalApi:
         url: str,
         payload: Optional[Dict[str, Any]] = None,
         headers: Optional[Dict[str, str]] = None,
-    ) -> Any:
+    ) -> SuccessResponse | ErrorResponse:
         """Send POST request
 
         Args:
@@ -455,10 +455,10 @@ class InternalApi:
             headers: Request headers
 
         Returns:
-            SuccessResponse object
+            SuccessResponse or ErrorResponse object
 
         Raises:
-            Error: API request failed or ErrorResponse
+            Error: API request failed
         """
         if not self._session:
             message = f'failed to find session with base_url={self._api_config["base_url"]}'
@@ -511,7 +511,7 @@ class InternalApi:
         url: str,
         payload: Optional[Dict[str, Any]] = None,
         headers: Optional[Dict[str, str]] = None,
-    ) -> Any:
+    ) -> SuccessResponse | ErrorResponse:
         """Send PUT request
 
         Args:
@@ -520,10 +520,10 @@ class InternalApi:
             headers: Request headers
 
         Returns:
-            SuccessResponse object
+            SuccessResponse or ErrorResponse object
 
         Raises:
-            Error: API request failed or ErrorResponse
+            Error: API request failed
         """
         if not self._session:
             message = f'failed to find session with base_url={self._api_config["base_url"]}'
