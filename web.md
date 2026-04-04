@@ -221,7 +221,7 @@ async def logging_middleware(request: web.Request, handler):
     start_time = time.perf_counter()
 
     # Log request info
-    logger.info(f'{request.method} {request.path}')
+    logger.debug(f'{request.method} {request.path}')
 
     # Call next middleware or handler
     response = await handler(request)
