@@ -92,36 +92,7 @@ timeout_s = 30.0  # Database operation timeout (seconds)
 
 ### Step 5: app/common.py Errc Enum (CLI)
 
-> Note: `Error`, `SuccessResponse`, `ErrorResponse`, `Pagination` classes are shared and defined in `SKILL.md` Step 5. Only the `Errc` enum differs.
-
-```python
-class Errc(Enum):
-    """Common error code enum"""
-
-    # HTTP related errors
-    UNKNOWN_ERROR = "zimu::common::000"
-    RESOURCE_NOT_FOUND = "zimu::common::001"
-    METHOD_NOT_ALLOWED = "zimu::common::002"
-
-    # Timeout errors
-    TIMEOUT = "zimu::common::003"
-
-    # INVALID errors
-    INVALID_PARAMETER = "zimu::common::004"
-    INVALID_JSON = "zimu::common::005"
-    INVALID_TYPE = "zimu::common::006"
-
-    # MISSING errors
-    MISSING_PARAMETER = "zimu::common::007"
-    MISSING_CONFIG = "zimu::common::008"
-    MISSING_DAO = "zimu::common::009"
-    MISSING_SERVICE = "zimu::common::010"
-    MISSING_FIELD = "zimu::common::011"
-
-    def __str__(self) -> str:
-        """Return error code string"""
-        return self.value
-```
+> Note: `Errc` enum is shared between CLI and Web. See `SKILL.md` Step 5 for the full definition.
 
 ### Step 10: app/main.py (CLI)
 

@@ -146,9 +146,45 @@ main = "DEBUG"  # config.dev.toml, supports DEBUG, INFO, WARNING, ERROR, CRITICA
 ### Step 5: Create app/common.py
 
 > **⚠️ CLI vs Web Difference**
-> - The `Errc` enum error codes differ
->
-> Below are the shared classes (`Error`, `SuccessResponse`, `ErrorResponse`, `Pagination`). For `Errc` enum, see `cli.md` or `web.md`
+> - `Errc` enum error codes are shared between CLI and Web (defined below)
+
+#### Errc Enum
+
+```python
+class Errc(Enum):
+    """Common error code enum"""
+
+    # HTTP related errors
+    UNKNOWN_ERROR = "zimu::common::000"
+    RESOURCE_NOT_FOUND = "zimu::common::001"
+    METHOD_NOT_ALLOWED = "zimu::common::002"
+
+    # Common errors
+    INTERNAL_SERVER_ERROR = "zimu::common::003"
+    BAD_REQUEST = "zimu::common::004"
+    UNAUTHORIZED = "zimu::common::005"
+    FORBIDDEN = "zimu::common::006"
+
+    # Timeout errors
+    TIMEOUT = "zimu::common::007"
+
+    # INVALID errors
+    INVALID_PARAMETER = "zimu::common::008"
+    INVALID_JSON = "zimu::common::009"
+    INVALID_TYPE = "zimu::common::010"
+
+    # MISSING errors
+    MISSING_PARAMETER = "zimu::common::011"
+    MISSING_CONFIG = "zimu::common::012"
+    MISSING_SERVICE = "zimu::common::013"
+    MISSING_DAO = "zimu::common::014"
+    MISSING_API = "zimu::common::015"
+    MISSING_FIELD = "zimu::common::016"
+
+    def __str__(self) -> str:
+        """Return error code string"""
+        return self.value
+```
 
 #### Shared Classes
 
@@ -282,8 +318,6 @@ class Pagination:
         """Return string representation"""
         return f'Pagination(page={self.page}, page_size={self.page_size}, total={self.total}, total_pages={self.total_pages}, has_next={self.has_next}, has_prev={self.has_prev})'
 ```
-
-> For the `Errc` enum definition, see `cli.md` or `web.md`
 
 ### Step 6: Create app/api/__init__.py
 
