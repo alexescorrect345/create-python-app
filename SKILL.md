@@ -381,7 +381,7 @@ class InternalApi:
         url: str,
         params: Optional[Dict[str, Any]] = None,
         headers: Optional[Dict[str, str]] = None,
-    ) -> SuccessResponse | ErrorResponse:
+    ) -> SuccessResponse:
         """Send GET request
 
         Args:
@@ -390,7 +390,7 @@ class InternalApi:
             headers: Request headers
 
         Returns:
-            SuccessResponse or ErrorResponse object
+            SuccessResponse object
 
         Raises:
             Error: API request failed
@@ -446,7 +446,7 @@ class InternalApi:
         url: str,
         payload: Optional[Dict[str, Any]] = None,
         headers: Optional[Dict[str, str]] = None,
-    ) -> SuccessResponse | ErrorResponse:
+    ) -> SuccessResponse:
         """Send POST request
 
         Args:
@@ -455,7 +455,7 @@ class InternalApi:
             headers: Request headers
 
         Returns:
-            SuccessResponse or ErrorResponse object
+            SuccessResponse object
 
         Raises:
             Error: API request failed
@@ -511,7 +511,7 @@ class InternalApi:
         url: str,
         payload: Optional[Dict[str, Any]] = None,
         headers: Optional[Dict[str, str]] = None,
-    ) -> SuccessResponse | ErrorResponse:
+    ) -> SuccessResponse:
         """Send PUT request
 
         Args:
@@ -520,7 +520,7 @@ class InternalApi:
             headers: Request headers
 
         Returns:
-            SuccessResponse or ErrorResponse object
+            SuccessResponse object
 
         Raises:
             Error: API request failed

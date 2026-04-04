@@ -131,7 +131,7 @@ class Errc(Enum):
 
     # INVALID errors
     INVALID_PARAMETER = "zimu::common::008"
-    JSON_INVALID = "zimu::common::009"
+    INVALID_JSON = "zimu::common::009"
     INVALID_TYPE = "zimu::common::010"
 
     # MISSING errors

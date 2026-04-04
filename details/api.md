@@ -84,9 +84,8 @@ All InternalApi subclasses inherit from `app.api.api.InternalApi` base class. Su
 
 ```python
 """User API Client - Calls internal user APIs"""
-from typing import Dict, Any, List, Optional
-
 from app.api.api import InternalApi
+from app.api.response import SuccessResponse
 
 
 class UserApi(InternalApi):
@@ -100,7 +99,7 @@ class UserApi(InternalApi):
         username: str,
         password: str,
         email: str = ""
-    ) -> int:
+    ) -> SuccessResponse:
         """Insert a user
 
         Args:
@@ -109,29 +108,32 @@ class UserApi(InternalApi):
             email: Email (optional)
 
         Returns:
-            id: Created user ID
+            SuccessResponse object (caller accesses .data["id"] for the created user ID)
 
         Raises:
-            Error: API request failed or ErrorResponse
+            Error: API request failed
         """
         response = await self._post('/users', {
             "username": username,
             "password": password,
             "email": email
         })
-        return response.data["id"]
+        return response
 
-    async def update_user_by_id(self, id: int, params: Dict[str, Any]) -> None:
+    async def update_user_by_id(self, id: int, params: Dict[str, Any]) -> SuccessResponse:
         """Update user by ID
 
         Args:
             id: User ID
             params: Update params, e.g. {"username": "new_name"}
 
+        Returns:
+            SuccessResponse object (caller accesses .data for response payload)
+
         Raises:
-            Error: API request failed or ErrorResponse
+            Error: API request failed
         """
-        await self._put(f'/users/{id}', params)
+        return await self._put(f'/users/{id}', params)
 
     async def delete_user_by_id(self, id: int) -> None:
         """Delete user by ID
@@ -140,29 +142,29 @@ class UserApi(InternalApi):
             id: User ID
 
         Raises:
-            Error: API request failed or ErrorResponse
+            Error: API request failed
         """
         await self._delete(f'/users/{id}')
 
-    async def find_user_by_id(self, id: int) -> Dict[str, Any]:
+    async def find_user_by_id(self, id: int) -> SuccessResponse:
         """Find user by ID
 
         Args:
             id: User ID
 
         Returns:
-            User info dict (via response.data)
+            SuccessResponse object (caller accesses .data for user info)
 
         Raises:
-            Error: API request failed or ErrorResponse
+            Error: API request failed
         """
         response = await self._get(f'/users/{id}')
-        return response.data
+        return response
 
     async def find_user(
         self,
         params: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+    ) -> SuccessResponse:
         """Find user list
 
         Args:
@@ -171,13 +173,13 @@ class UserApi(InternalApi):
                 - status: User status (optional)
 
         Returns:
-            User info list (via response.data)
+            SuccessResponse object (caller accesses .data for user list)
 
         Raises:
-            Error: API request failed or ErrorResponse
+            Error: API request failed
         """
         response = await self._get('/users', params=params)
-        return response.data
+        return response
 ```
 
 ### Complete Derived ExternalApi Template
