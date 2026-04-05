@@ -19,7 +19,12 @@ Use this SKILL when ANY of the following conditions is met:
 3. **User requests to create a new API class**
    - Shared process in this document; type-specific initialization see `cli.md` or `web.md`
 
-4. **User explicitly forces the use of this skill**
+4. **User requests to generate Web API documentation**
+   - **Only applicable for web service projects** (not for CLI programs)
+   - Extract route definitions from existing `handler.py` files
+   - Generate `doc/WEB_API.md` following the format in `details/WEB_API.md`
+
+5. **User explicitly forces the use of this skill**
 
 ---
 
@@ -65,7 +70,7 @@ If the user chooses **None**, skip all database-related steps (Step 8, Step 9, d
 ### Step 2: Create Directory Structure
 
 > **⚠️ CLI vs Web Difference**
-> - **Web** additionally includes: `app/middleware.py`, `doc/API.md`, `handler.py` (feature level)
+> - **Web** additionally includes: `app/middleware.py`, `doc/WEB_API.md`, `handler.py` (feature level)
 > - **CLI** directory structure is more minimal
 >
 > For detailed directory structure, see `cli.md` or `web.md`
@@ -180,10 +185,6 @@ class Errc(Enum):
     MISSING_DAO = "zimu::common::014"
     MISSING_API = "zimu::common::015"
     MISSING_FIELD = "zimu::common::016"
-
-    def __str__(self) -> str:
-        """Return error code string"""
-        return self.value
 ```
 
 #### Shared Classes
@@ -349,9 +350,6 @@ class Errc(Enum):
     SESSION_NOT_FOUND = "zimu::api::001"
     API_REQUEST_FAILED = "zimu::api::002"
 
-    def __str__(self) -> str:
-        return self.value
-
 
 def sanitize_headers(headers: Optional[Dict[str, str]]) -> Optional[Dict[str, str]]:
     """Remove sensitive fields from headers for logging"""
@@ -432,7 +430,7 @@ class InternalApi:
         if not self._session:
             message = f'failed to find session with base_url={self._api_config["base_url"]}'
             self._logger.error(message)
-            raise Error(str(ApiErrc.SESSION_NOT_FOUND), message)
+            raise Error(ApiErrc.SESSION_NOT_FOUND.value, message)
 
         base_url = self._api_config["base_url"].rstrip('/')
         full_url = f"{base_url}{url}"
@@ -446,7 +444,7 @@ class InternalApi:
                     error_text = await response.text()
                     message = f'[{elapsed:.3f}s]failed to get with url={full_url}, params={params}, headers={safe_headers}, status={response.status}, error={error_text}'
                     self._logger.error(message)
-                    raise Error(str(ApiErrc.API_REQUEST_FAILED), message)
+                    raise Error(ApiErrc.API_REQUEST_FAILED.value, message)
 
                 result = await response.json()
 
@@ -467,13 +465,13 @@ class InternalApi:
             elapsed = time.time() - start_time
             message = f'[{elapsed:.3f}s]timeout to get with url={full_url}, params={params}, headers={safe_headers}'
             self._logger.error(message)
-            raise Error(str(CommonErrc.TIMEOUT), message) from e
+            raise Error(CommonErrc.TIMEOUT.value, message) from e
 
         except Exception as e:
             elapsed = time.time() - start_time
             message = f'[{elapsed:.3f}s]failed to get with url={full_url}, params={params}, headers={safe_headers}'
             self._logger.error(message)
-            raise Error(str(ApiErrc.API_REQUEST_FAILED), message) from e
+            raise Error(ApiErrc.API_REQUEST_FAILED.value, message) from e
 
     async def _post(
         self,
@@ -497,7 +495,7 @@ class InternalApi:
         if not self._session:
             message = f'failed to find session with base_url={self._api_config["base_url"]}'
             self._logger.error(message)
-            raise Error(str(ApiErrc.SESSION_NOT_FOUND), message)
+            raise Error(ApiErrc.SESSION_NOT_FOUND.value, message)
 
         base_url = self._api_config["base_url"].rstrip('/')
         full_url = f"{base_url}{url}"
@@ -511,7 +509,7 @@ class InternalApi:
                     error_text = await response.text()
                     message = f'[{elapsed:.3f}s]failed to post with url={full_url}, payload={payload}, headers={safe_headers}, status={response.status}, error={error_text}'
                     self._logger.error(message)
-                    raise Error(str(ApiErrc.API_REQUEST_FAILED), message)
+                    raise Error(ApiErrc.API_REQUEST_FAILED.value, message)
 
                 result = await response.json()
 
@@ -532,13 +530,13 @@ class InternalApi:
             elapsed = time.time() - start_time
             message = f'[{elapsed:.3f}s]timeout to post with url={full_url}, payload={payload}, headers={safe_headers}'
             self._logger.error(message)
-            raise Error(str(CommonErrc.TIMEOUT), message) from e
+            raise Error(CommonErrc.TIMEOUT.value, message) from e
 
         except Exception as e:
             elapsed = time.time() - start_time
             message = f'[{elapsed:.3f}s]failed to post with url={full_url}, payload={payload}, headers={safe_headers}'
             self._logger.error(message)
-            raise Error(str(ApiErrc.API_REQUEST_FAILED), message) from e
+            raise Error(ApiErrc.API_REQUEST_FAILED.value, message) from e
 
     async def _put(
         self,
@@ -562,7 +560,7 @@ class InternalApi:
         if not self._session:
             message = f'failed to find session with base_url={self._api_config["base_url"]}'
             self._logger.error(message)
-            raise Error(str(ApiErrc.SESSION_NOT_FOUND), message)
+            raise Error(ApiErrc.SESSION_NOT_FOUND.value, message)
 
         base_url = self._api_config["base_url"].rstrip('/')
         full_url = f"{base_url}{url}"
@@ -576,7 +574,7 @@ class InternalApi:
                     error_text = await response.text()
                     message = f'[{elapsed:.3f}s]failed to put with url={full_url}, payload={payload}, headers={safe_headers}, status={response.status}, error={error_text}'
                     self._logger.error(message)
-                    raise Error(str(ApiErrc.API_REQUEST_FAILED), message)
+                    raise Error(ApiErrc.API_REQUEST_FAILED.value, message)
 
                 result = await response.json()
 
@@ -597,13 +595,13 @@ class InternalApi:
             elapsed = time.time() - start_time
             message = f'[{elapsed:.3f}s]timeout to put with url={full_url}, payload={payload}, headers={safe_headers}'
             self._logger.error(message)
-            raise Error(str(CommonErrc.TIMEOUT), message) from e
+            raise Error(CommonErrc.TIMEOUT.value, message) from e
 
         except Exception as e:
             elapsed = time.time() - start_time
             message = f'[{elapsed:.3f}s]failed to put with url={full_url}, payload={payload}, headers={safe_headers}'
             self._logger.error(message)
-            raise Error(str(ApiErrc.API_REQUEST_FAILED), message) from e
+            raise Error(ApiErrc.API_REQUEST_FAILED.value, message) from e
 
     async def _delete(
         self,
@@ -622,7 +620,7 @@ class InternalApi:
         if not self._session:
             message = f'failed to find session with base_url={self._api_config["base_url"]}'
             self._logger.error(message)
-            raise Error(str(ApiErrc.SESSION_NOT_FOUND), message)
+            raise Error(ApiErrc.SESSION_NOT_FOUND.value, message)
 
         base_url = self._api_config["base_url"].rstrip('/')
         full_url = f"{base_url}{url}"
@@ -636,7 +634,7 @@ class InternalApi:
                     error_text = await response.text()
                     message = f'[{elapsed:.3f}s]failed to delete with url={full_url}, headers={safe_headers}, status={response.status}, error={error_text}'
                     self._logger.error(message)
-                    raise Error(str(ApiErrc.API_REQUEST_FAILED), message)
+                    raise Error(ApiErrc.API_REQUEST_FAILED.value, message)
 
                 self._logger.debug(f'[{elapsed:.3f}s]succeeded to delete with url={full_url}, headers={safe_headers}')
 
@@ -647,13 +645,13 @@ class InternalApi:
             elapsed = time.time() - start_time
             message = f'[{elapsed:.3f}s]timeout to delete with url={full_url}, headers={safe_headers}'
             self._logger.error(message)
-            raise Error(str(CommonErrc.TIMEOUT), message) from e
+            raise Error(CommonErrc.TIMEOUT.value, message) from e
 
         except Exception as e:
             elapsed = time.time() - start_time
             message = f'[{elapsed:.3f}s]failed to delete with url={full_url}, headers={safe_headers}'
             self._logger.error(message)
-            raise Error(str(ApiErrc.API_REQUEST_FAILED), message) from e
+            raise Error(ApiErrc.API_REQUEST_FAILED.value, message) from e
 
 
 class ExternalApi:
@@ -712,7 +710,7 @@ class ExternalApi:
         if not self._session:
             message = f'failed to find session with base_url={self._api_config["base_url"]}'
             self._logger.error(message)
-            raise Error(str(ApiErrc.SESSION_NOT_FOUND), message)
+            raise Error(ApiErrc.SESSION_NOT_FOUND.value, message)
 
         base_url = self._api_config["base_url"].rstrip('/')
         full_url = f"{base_url}{url}"
@@ -726,7 +724,7 @@ class ExternalApi:
                     error_text = await response.text()
                     message = f'[{elapsed:.3f}s]failed to get with url={full_url}, params={params}, headers={safe_headers}, status={response.status}, error={error_text}'
                     self._logger.error(message)
-                    raise Error(str(ApiErrc.API_REQUEST_FAILED), message)
+                    raise Error(ApiErrc.API_REQUEST_FAILED.value, message)
 
                 result = await response.json()
                 self._logger.debug(f'[{elapsed:.3f}s]succeeded to get with url={full_url}, params={params}, headers={safe_headers}')
@@ -739,13 +737,13 @@ class ExternalApi:
             elapsed = time.time() - start_time
             message = f'[{elapsed:.3f}s]timeout to get with url={full_url}, params={params}, headers={safe_headers}'
             self._logger.error(message)
-            raise Error(str(CommonErrc.TIMEOUT), message) from e
+            raise Error(CommonErrc.TIMEOUT.value, message) from e
 
         except Exception as e:
             elapsed = time.time() - start_time
             message = f'[{elapsed:.3f}s]failed to get with url={full_url}, params={params}, headers={safe_headers}'
             self._logger.error(message)
-            raise Error(str(ApiErrc.API_REQUEST_FAILED), message) from e
+            raise Error(ApiErrc.API_REQUEST_FAILED.value, message) from e
 
     async def _post(
         self,
@@ -769,7 +767,7 @@ class ExternalApi:
         if not self._session:
             message = f'failed to find session with base_url={self._api_config["base_url"]}'
             self._logger.error(message)
-            raise Error(str(ApiErrc.SESSION_NOT_FOUND), message)
+            raise Error(ApiErrc.SESSION_NOT_FOUND.value, message)
 
         base_url = self._api_config["base_url"].rstrip('/')
         full_url = f"{base_url}{url}"
@@ -783,7 +781,7 @@ class ExternalApi:
                     error_text = await response.text()
                     message = f'[{elapsed:.3f}s]failed to post with url={full_url}, payload={payload}, headers={safe_headers}, status={response.status}, error={error_text}'
                     self._logger.error(message)
-                    raise Error(str(ApiErrc.API_REQUEST_FAILED), message)
+                    raise Error(ApiErrc.API_REQUEST_FAILED.value, message)
 
                 result = await response.json()
                 self._logger.debug(f'[{elapsed:.3f}s]succeeded to post with url={full_url}, payload={payload}, headers={safe_headers}')
@@ -796,13 +794,13 @@ class ExternalApi:
             elapsed = time.time() - start_time
             message = f'[{elapsed:.3f}s]timeout to post with url={full_url}, payload={payload}, headers={safe_headers}'
             self._logger.error(message)
-            raise Error(str(CommonErrc.TIMEOUT), message) from e
+            raise Error(CommonErrc.TIMEOUT.value, message) from e
 
         except Exception as e:
             elapsed = time.time() - start_time
             message = f'[{elapsed:.3f}s]failed to post with url={full_url}, payload={payload}, headers={safe_headers}'
             self._logger.error(message)
-            raise Error(str(ApiErrc.API_REQUEST_FAILED), message) from e
+            raise Error(ApiErrc.API_REQUEST_FAILED.value, message) from e
 
     async def _put(
         self,
@@ -826,7 +824,7 @@ class ExternalApi:
         if not self._session:
             message = f'failed to find session with base_url={self._api_config["base_url"]}'
             self._logger.error(message)
-            raise Error(str(ApiErrc.SESSION_NOT_FOUND), message)
+            raise Error(ApiErrc.SESSION_NOT_FOUND.value, message)
 
         base_url = self._api_config["base_url"].rstrip('/')
         full_url = f"{base_url}{url}"
@@ -840,7 +838,7 @@ class ExternalApi:
                     error_text = await response.text()
                     message = f'[{elapsed:.3f}s]failed to put with url={full_url}, payload={payload}, headers={safe_headers}, status={response.status}, error={error_text}'
                     self._logger.error(message)
-                    raise Error(str(ApiErrc.API_REQUEST_FAILED), message)
+                    raise Error(ApiErrc.API_REQUEST_FAILED.value, message)
 
                 result = await response.json()
                 self._logger.debug(f'[{elapsed:.3f}s]succeeded to put with url={full_url}, payload={payload}, headers={safe_headers}')
@@ -853,13 +851,13 @@ class ExternalApi:
             elapsed = time.time() - start_time
             message = f'[{elapsed:.3f}s]timeout to put with url={full_url}, payload={payload}, headers={safe_headers}'
             self._logger.error(message)
-            raise Error(str(CommonErrc.TIMEOUT), message) from e
+            raise Error(CommonErrc.TIMEOUT.value, message) from e
 
         except Exception as e:
             elapsed = time.time() - start_time
             message = f'[{elapsed:.3f}s]failed to put with url={full_url}, payload={payload}, headers={safe_headers}'
             self._logger.error(message)
-            raise Error(str(ApiErrc.API_REQUEST_FAILED), message) from e
+            raise Error(ApiErrc.API_REQUEST_FAILED.value, message) from e
 
     async def _delete(
         self,
@@ -878,7 +876,7 @@ class ExternalApi:
         if not self._session:
             message = f'failed to find session with base_url={self._api_config["base_url"]}'
             self._logger.error(message)
-            raise Error(str(ApiErrc.SESSION_NOT_FOUND), message)
+            raise Error(ApiErrc.SESSION_NOT_FOUND.value, message)
 
         base_url = self._api_config["base_url"].rstrip('/')
         full_url = f"{base_url}{url}"
@@ -892,7 +890,7 @@ class ExternalApi:
                     error_text = await response.text()
                     message = f'[{elapsed:.3f}s]failed to delete with url={full_url}, headers={safe_headers}, status={response.status}, error={error_text}'
                     self._logger.error(message)
-                    raise Error(str(ApiErrc.API_REQUEST_FAILED), message)
+                    raise Error(ApiErrc.API_REQUEST_FAILED.value, message)
 
                 self._logger.debug(f'[{elapsed:.3f}s]succeeded to delete with url={full_url}, headers={safe_headers}')
 
@@ -903,13 +901,13 @@ class ExternalApi:
             elapsed = time.time() - start_time
             message = f'[{elapsed:.3f}s]timeout to delete with url={full_url}, headers={safe_headers}'
             self._logger.error(message)
-            raise Error(str(CommonErrc.TIMEOUT), message) from e
+            raise Error(CommonErrc.TIMEOUT.value, message) from e
 
         except Exception as e:
             elapsed = time.time() - start_time
             message = f'[{elapsed:.3f}s]failed to delete with url={full_url}, headers={safe_headers}'
             self._logger.error(message)
-            raise Error(str(ApiErrc.API_REQUEST_FAILED), message) from e
+            raise Error(ApiErrc.API_REQUEST_FAILED.value, message) from e
 ```
 
 ### Step 9: Create Database Layer
@@ -1025,10 +1023,6 @@ class Errc(Enum):
     INSERT_FAILED = "zimu::db::007"
     UPDATE_FAILED = "zimu::db::008"
     DELETE_FAILED = "zimu::db::009"
-
-    def __str__(self) -> str:
-        """Return error code string"""
-        return self.value
 ```
 
 #### 9.4 Create `app/db/{Name}DB.py` (Optional)

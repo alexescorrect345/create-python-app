@@ -157,7 +157,7 @@ class UserDao:
         except Exception as e:
             message = f'failed to initialize {self._TABLE_NAME} table with config={self._config}'
             self._logger.error(message)
-            raise Error(str(DbErrc.TRANSACTION_FAILED), message) from e
+            raise Error(DbErrc.TRANSACTION_FAILED.value, message) from e
 
     async def insert(self, user: UserField) -> int:
         """Insert user
@@ -178,7 +178,7 @@ class UserDao:
         except Exception as e:
             message = f'failed to insert user with username={user.username}'
             self._logger.error(message)
-            raise Error(str(DbErrc.INSERT_FAILED), message) from e
+            raise Error(DbErrc.INSERT_FAILED.value, message) from e
 
     async def update_by_id(self, id: int, params: dict) -> None:
         """Update user by ID
@@ -213,7 +213,7 @@ class UserDao:
         except Exception as e:
             message = f'failed to update user with id={id}, params={params}'
             self._logger.error(message)
-            raise Error(str(DbErrc.UPDATE_FAILED), message) from e
+            raise Error(DbErrc.UPDATE_FAILED.value, message) from e
 
     async def delete_by_id(self, id: int) -> None:
         """Delete user by ID
@@ -231,7 +231,7 @@ class UserDao:
         except Exception as e:
             message = f'failed to delete user with id={id}'
             self._logger.error(message)
-            raise Error(str(DbErrc.DELETE_FAILED), message) from e
+            raise Error(DbErrc.DELETE_FAILED.value, message) from e
 
     async def find_by_id(self, id: int) -> UserField | None:
         """Find user by ID
@@ -258,7 +258,7 @@ class UserDao:
         except Exception as e:
             message = f'failed to find user by id with id={id}'
             self._logger.error(message)
-            raise Error(str(DbErrc.QUERY_FAILED), message) from e
+            raise Error(DbErrc.QUERY_FAILED.value, message) from e
 
     async def find_by_username(self, username: str) -> UserField | None:
         """Find user by username
@@ -285,7 +285,7 @@ class UserDao:
         except Exception as e:
             message = f'failed to find user by username with username={username}'
             self._logger.error(message)
-            raise Error(str(DbErrc.QUERY_FAILED), message) from e
+            raise Error(DbErrc.QUERY_FAILED.value, message) from e
 
     async def find(
         self,
@@ -343,5 +343,5 @@ class UserDao:
         except Exception as e:
             message = f'failed to find users with params={params}, page={page}, page_size={page_size}'
             self._logger.error(message)
-            raise Error(str(DbErrc.QUERY_FAILED), message) from e
+            raise Error(DbErrc.QUERY_FAILED.value, message) from e
 ```

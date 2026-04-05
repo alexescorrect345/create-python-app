@@ -44,7 +44,7 @@ Before executing all DAO-related operations, must check if DAO is initialized. I
 if self._user_dao is None:
     message = f'failed to find user_dao in UserService'
     self._logger.error(message)
-    raise Error(str(CommonErrc.MISSING_DAO), message)
+    raise Error(CommonErrc.MISSING_DAO.value, message)
 ```
 
 #### Method Ordering
@@ -128,20 +128,20 @@ class UserService:
         if self._user_dao is None:
             message = f'failed to find user_dao in {self.__class__.__name__}'
             self._logger.error(message)
-            raise Error(str(CommonErrc.MISSING_DAO), message)
+            raise Error(CommonErrc.MISSING_DAO.value, message)
 
         # Business logic: validate required fields
         if not user_field.username:
             message = f'failed to validate user with username={user_field.username}'
             self._logger.error(message)
-            raise Error(str(UserErrc.USERNAME_REQUIRED), message)
+            raise Error(UserErrc.USERNAME_REQUIRED.value, message)
 
         # Business logic: check if username already exists
         existing_user_field = await self._user_dao.find_by_username(username=user_field.username)
         if existing_user_field:
             message = f'failed to insert user with username={user_field.username}, username already exists'
             self._logger.error(message)
-            raise Error(str(UserErrc.USERNAME_EXISTS), message)
+            raise Error(UserErrc.USERNAME_EXISTS.value, message)
 
         # Create user
         id = await self._user_dao.insert(user=user_field)
@@ -166,14 +166,14 @@ class UserService:
         if self._user_dao is None:
             message = f'failed to find user_dao in {self.__class__.__name__}'
             self._logger.error(message)
-            raise Error(str(CommonErrc.MISSING_DAO), message)
+            raise Error(CommonErrc.MISSING_DAO.value, message)
 
         # Check if user exists
         user_field = await self._user_dao.find_by_id(id)
         if not user_field:
             message = f'failed to find user by id={id}'
             self._logger.error(message)
-            raise Error(str(CommonErrc.MISSING_FIELD), message)
+            raise Error(CommonErrc.MISSING_FIELD.value, message)
 
         # If updating username, check if new username already exists
         username = params.get("username")
@@ -182,7 +182,7 @@ class UserService:
             if user_list[0]:
                 message = f'failed to update user with username={username}, username already exists'
                 self._logger.error(message)
-                raise Error(str(UserErrc.USERNAME_EXISTS), message)
+                raise Error(UserErrc.USERNAME_EXISTS.value, message)
 
         # Update user
         await self._user_dao.update_by_id(id, params=params)
@@ -202,14 +202,14 @@ class UserService:
         if self._user_dao is None:
             message = f'failed to find user_dao in {self.__class__.__name__}'
             self._logger.error(message)
-            raise Error(str(CommonErrc.MISSING_DAO), message)
+            raise Error(CommonErrc.MISSING_DAO.value, message)
 
         # Check if user exists
         user_field = await self._user_dao.find_by_id(id)
         if not user_field:
             message = f'failed to find user by id={id}'
             self._logger.error(message)
-            raise Error(str(CommonErrc.MISSING_FIELD), message)
+            raise Error(CommonErrc.MISSING_FIELD.value, message)
 
         # Delete user
         await self._user_dao.delete_by_id(id)
@@ -228,14 +228,14 @@ class UserService:
         if self._user_dao is None:
             message = f'failed to find user_dao in {self.__class__.__name__}'
             self._logger.error(message)
-            raise Error(str(CommonErrc.MISSING_DAO), message)
+            raise Error(CommonErrc.MISSING_DAO.value, message)
 
         # Query user
         user_field = await self._user_dao.find_by_id(id)
         if not user_field:
             message = f'failed to find user by id={id}'
             self._logger.error(message)
-            raise Error(str(CommonErrc.MISSING_FIELD), message)
+            raise Error(CommonErrc.MISSING_FIELD.value, message)
 
         return user_field
 
@@ -260,7 +260,7 @@ class UserService:
         if self._user_dao is None:
             message = f'failed to find user_dao in {self.__class__.__name__}'
             self._logger.error(message)
-            raise Error(str(CommonErrc.MISSING_DAO), message)
+            raise Error(CommonErrc.MISSING_DAO.value, message)
 
         user_list, pagination = await self._user_dao.find(
             params=params,

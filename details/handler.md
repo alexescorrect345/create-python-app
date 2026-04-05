@@ -41,7 +41,7 @@ Before executing any Service-related operations, you must check if the Service h
 if self._user_service is None:
     message = 'failed to find user_service'
     self._logger.error(message)
-    raise Error(str(UserErrc.SERVICE_NOT_FOUND), message)
+    raise Error(UserErrc.SERVICE_NOT_FOUND.value, message)
 ```
 
 **Notes**:
@@ -214,7 +214,7 @@ class UserHandler:
             if self._user_service is None:
                 message = 'failed to find user_service'
                 self._logger.error(message)
-                raise Error(str(UserErrc.SERVICE_NOT_FOUND), message)
+                raise Error(UserErrc.SERVICE_NOT_FOUND.value, message)
 
             # Call service layer
             id = await self._user_service.insert(user=user_field)
@@ -233,7 +233,7 @@ class UserHandler:
         except Exception as e:
             message = f'failed to process request in insert with username={username}'
             self._logger.error(message)
-            raise Error(str(UserErrc.UNKNOWN_ERROR), message) from e
+            raise Error(UserErrc.UNKNOWN_ERROR.value, message) from e
 
     async def update_by_id(self, request: web.Request):
         """Update user by ID (PUT /users/{id})
@@ -270,7 +270,7 @@ class UserHandler:
             if self._user_service is None:
                 message = 'failed to find user_service'
                 self._logger.error(message)
-                raise Error(str(UserErrc.SERVICE_NOT_FOUND), message)
+                raise Error(UserErrc.SERVICE_NOT_FOUND.value, message)
 
             # Call service layer
             user_field = await self._user_service.update_by_id(
@@ -291,7 +291,7 @@ class UserHandler:
         except Exception as e:
             message = f'failed to process request in update_by_id with id={id}'
             self._logger.error(message)
-            raise Error(str(UserErrc.UNKNOWN_ERROR), message) from e
+            raise Error(UserErrc.UNKNOWN_ERROR.value, message) from e
 
     async def delete_by_id(self, request: web.Request):
         """Delete user by ID (DELETE /users/{id})
@@ -310,7 +310,7 @@ class UserHandler:
             if self._user_service is None:
                 message = 'failed to find user_service'
                 self._logger.error(message)
-                raise Error(str(UserErrc.SERVICE_NOT_FOUND), message)
+                raise Error(UserErrc.SERVICE_NOT_FOUND.value, message)
 
             # Call service layer
             await self._user_service.delete_by_id(id=id)
@@ -328,7 +328,7 @@ class UserHandler:
         except Exception as e:
             message = f'failed to process request in delete_by_id with id={id}'
             self._logger.error(message)
-            raise Error(str(UserErrc.UNKNOWN_ERROR), message) from e
+            raise Error(UserErrc.UNKNOWN_ERROR.value, message) from e
 
     async def find_by_id(self, request: web.Request):
         """Find user by ID (GET /users/{id})
@@ -347,7 +347,7 @@ class UserHandler:
             if self._user_service is None:
                 message = 'failed to find user_service'
                 self._logger.error(message)
-                raise Error(str(UserErrc.SERVICE_NOT_FOUND), message)
+                raise Error(UserErrc.SERVICE_NOT_FOUND.value, message)
 
             # Call service layer
             user_field = await self._user_service.find_by_id(id=id)
@@ -365,7 +365,7 @@ class UserHandler:
         except Exception as e:
             message = f'failed to process request in find_by_id with id={id}'
             self._logger.error(message)
-            raise Error(str(UserErrc.UNKNOWN_ERROR), message) from e
+            raise Error(UserErrc.UNKNOWN_ERROR.value, message) from e
 
     async def find(self, request: web.Request):
         """Find user list (GET /users)
@@ -389,7 +389,7 @@ class UserHandler:
             if self._user_service is None:
                 message = 'failed to find user_service'
                 self._logger.error(message)
-                raise Error(str(UserErrc.SERVICE_NOT_FOUND), message)
+                raise Error(UserErrc.SERVICE_NOT_FOUND.value, message)
 
             # Call service layer
             if page_raw is None and page_size_raw is None:
@@ -427,7 +427,7 @@ class UserHandler:
         except Exception as e:
             message = f'failed to process request in find with params={query_params}'
             self._logger.error(message)
-            raise Error(str(UserErrc.UNKNOWN_ERROR), message) from e
+            raise Error(UserErrc.UNKNOWN_ERROR.value, message) from e
 
     # Route registration example
     def register_routes(self, app: web.Application):

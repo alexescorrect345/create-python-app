@@ -156,7 +156,7 @@ async def error_middleware(request: web.Request, handler):
         logger.exception(e)
         return web.json_response(
             ErrorResponse(
-                code=str(Errc.INTERNAL_SERVER_ERROR),
+                code=Errc.INTERNAL_SERVER_ERROR.value,
                 message=message
             ).to_dict(),
             status=e.status
@@ -168,7 +168,7 @@ async def error_middleware(request: web.Request, handler):
         logger.exception(e)
         return web.json_response(
             ErrorResponse(
-                code=str(Errc.INTERNAL_SERVER_ERROR),
+                code=Errc.INTERNAL_SERVER_ERROR.value,
                 message='internal server error'
             ).to_dict(),
             status=500

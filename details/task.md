@@ -23,7 +23,7 @@ async def _run_once(self):
     if self._user_service is None:
         message = f'failed to find user_service in UserTask'
         self._logger.error(message)
-        raise Error(str(CommonErrc.MISSING_SERVICE), message)
+        raise Error(CommonErrc.MISSING_SERVICE.value, message)
     
     users = await self._user_service.find()
 
@@ -137,7 +137,7 @@ class UserTask(Task):
             if self._user_service is None:
                 message = f'failed to find user_service in UserTask'
                 self._logger.error(message)
-                raise Error(str(CommonErrc.MISSING_SERVICE), message)
+                raise Error(CommonErrc.MISSING_SERVICE.value, message)
 
             # Get all users
             users = await self._user_service.find()
