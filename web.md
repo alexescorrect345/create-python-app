@@ -330,7 +330,7 @@ def main():
     app.on_startup.append(on_startup)
     app.on_cleanup.append(on_cleanup)
 
-    logger.info(f'ready to run app on host={host}, port={port}')
+    logger.info(f'ready to run app on env={env}, host={host}, port={port}')
     web.run_app(app, host=host, port=port)
 
 
