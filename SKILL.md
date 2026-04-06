@@ -160,31 +160,31 @@ class Errc(Enum):
     """Common error code enum"""
 
     # HTTP related errors
-    UNKNOWN_ERROR = 'zimu::common::000'
-    RESOURCE_NOT_FOUND = 'zimu::common::001'
-    METHOD_NOT_ALLOWED = 'zimu::common::002'
+    UNKNOWN_ERROR = 'myapp::common::000'
+    RESOURCE_NOT_FOUND = 'myapp::common::001'
+    METHOD_NOT_ALLOWED = 'myapp::common::002'
 
     # Common errors
-    INTERNAL_SERVER_ERROR = 'zimu::common::003'
-    BAD_REQUEST = 'zimu::common::004'
-    UNAUTHORIZED = 'zimu::common::005'
-    FORBIDDEN = 'zimu::common::006'
+    INTERNAL_SERVER_ERROR = 'myapp::common::003'
+    BAD_REQUEST = 'myapp::common::004'
+    UNAUTHORIZED = 'myapp::common::005'
+    FORBIDDEN = 'myapp::common::006'
 
     # Timeout errors
-    TIMEOUT = 'zimu::common::007'
+    TIMEOUT = 'myapp::common::007'
 
     # INVALID errors
-    INVALID_PARAMETER = 'zimu::common::008'
-    INVALID_JSON = 'zimu::common::009'
-    INVALID_TYPE = 'zimu::common::010'
+    INVALID_PARAMETER = 'myapp::common::008'
+    INVALID_JSON = 'myapp::common::009'
+    INVALID_TYPE = 'myapp::common::010'
 
     # MISSING errors
-    MISSING_PARAMETER = 'zimu::common::011'
-    MISSING_CONFIG = 'zimu::common::012'
-    MISSING_SERVICE = 'zimu::common::013'
-    MISSING_DAO = 'zimu::common::014'
-    MISSING_API = 'zimu::common::015'
-    MISSING_FIELD = 'zimu::common::016'
+    MISSING_PARAMETER = 'myapp::common::011'
+    MISSING_CONFIG = 'myapp::common::012'
+    MISSING_SERVICE = 'myapp::common::013'
+    MISSING_DAO = 'myapp::common::014'
+    MISSING_API = 'myapp::common::015'
+    MISSING_FIELD = 'myapp::common::016'
 ```
 
 #### Shared Classes
@@ -219,7 +219,7 @@ class Error(Exception):
 class SuccessResponse:
     """Data structure for returning success response to HTTP API callers"""
 
-    code: str = ""
+    code: str = ''
     data: Any = field(default_factory=dict)
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3])
 
@@ -232,7 +232,7 @@ class SuccessResponse:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SuccessResponse":
+    def from_dict(cls, data: Dict[str, Any]) -> 'SuccessResponse':
         """Create instance from dictionary
 
         Args:
@@ -265,7 +265,7 @@ class ErrorResponse:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ErrorResponse":
+    def from_dict(cls, data: Dict[str, Any]) -> 'ErrorResponse':
         """Create instance from dictionary
 
         Args:
@@ -304,7 +304,7 @@ class Pagination:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Pagination":
+    def from_dict(cls, data: Dict[str, Any]) -> 'Pagination':
         """Create instance from dictionary
 
         Args:
@@ -346,9 +346,9 @@ from typing import Any, Dict, Optional
 
 class Errc(Enum):
     """API error code enum"""
-    UNKNOWN_ERROR = "zimu::api::000"
-    SESSION_NOT_FOUND = "zimu::api::001"
-    API_REQUEST_FAILED = "zimu::api::002"
+    UNKNOWN_ERROR = 'myapp::api::000'
+    SESSION_NOT_FOUND = 'myapp::api::001'
+    API_REQUEST_FAILED = 'myapp::api::002'
 
 
 def sanitize_headers(headers: Optional[Dict[str, str]]) -> Optional[Dict[str, str]]:
@@ -387,7 +387,7 @@ class InternalApi:
         """Initialize API client
 
         Args:
-            api_config: API configuration dict, e.g. config["service"]["api"]["zimu"]
+            api_config: API configuration dict, e.g. config["service"]["api"]["myinternalapi"]
                         Must contain 'base_url' and 'timeout_s'
         """
         self._api_config = api_config
@@ -448,7 +448,7 @@ class InternalApi:
 
                 result = await response.json()
 
-                if result["code"] != "":
+                if result["code"] != '':
                     error_response = ErrorResponse.from_dict(result)
                     message = f'[{elapsed:.3f}s]failed to get with API error: code={error_response.code}, message={error_response.message}, url={full_url}, params={params}, headers={safe_headers}'
                     self._logger.error(message)
@@ -513,7 +513,7 @@ class InternalApi:
 
                 result = await response.json()
 
-                if result["code"] != "":
+                if result["code"] != '':
                     error_response = ErrorResponse.from_dict(result)
                     message = f'[{elapsed:.3f}s]failed to post with API error: code={error_response.code}, message={error_response.message}, url={full_url}, payload={payload}, headers={safe_headers}'
                     self._logger.error(message)
@@ -578,7 +578,7 @@ class InternalApi:
 
                 result = await response.json()
 
-                if result["code"] != "":
+                if result["code"] != '':
                     error_response = ErrorResponse.from_dict(result)
                     message = f'[{elapsed:.3f}s]failed to put with API error: code={error_response.code}, message={error_response.message}, url={full_url}, payload={payload}, headers={safe_headers}'
                     self._logger.error(message)
@@ -667,7 +667,7 @@ class ExternalApi:
         """Initialize API client
 
         Args:
-            api_config: API configuration dict, e.g. config["service"]["api"]["external"]
+            api_config: API configuration dict, e.g. config["service"]["api"]["myexternalapi"]
                         Must contain 'base_url' and 'timeout_s'
         """
         self._api_config = api_config
@@ -1007,22 +1007,22 @@ class Errc(Enum):
     """Database error code enum"""
 
     # Configuration errors
-    UNKNOWN_ERROR = "zimu::db::000"
-    MISSING_SCRIPT = "zimu::db::001"
+    UNKNOWN_ERROR = 'myapp::db::000'
+    MISSING_SCRIPT = 'myapp::db::001'
 
     # Connection errors
-    CONNECT_FAILED = "zimu::db::002"
-    DISCONNECT_FAILED = "zimu::db::003"
-    NOT_CONNECTED = "zimu::db::004"
+    CONNECT_FAILED = 'myapp::db::002'
+    DISCONNECT_FAILED = 'myapp::db::003'
+    NOT_CONNECTED = 'myapp::db::004'
 
     # Query errors
-    QUERY_FAILED = "zimu::db::005"
-    EXECUTION_FAILED = "zimu::db::006"
+    QUERY_FAILED = 'myapp::db::005'
+    EXECUTION_FAILED = 'myapp::db::006'
 
     # Operation errors
-    INSERT_FAILED = "zimu::db::007"
-    UPDATE_FAILED = "zimu::db::008"
-    DELETE_FAILED = "zimu::db::009"
+    INSERT_FAILED = 'myapp::db::007'
+    UPDATE_FAILED = 'myapp::db::008'
+    DELETE_FAILED = 'myapp::db::009'
 ```
 
 #### 9.4 Create `app/db/{Name}DB.py` (Optional)
