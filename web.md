@@ -118,8 +118,8 @@ Create `app/middleware.py` with the following content:
 ```python
 """Middleware module: unified management of all middleware"""
 
-import logging
 import time
+import logging
 
 from aiohttp import web
 
@@ -354,9 +354,9 @@ class Errc(Enum):
 
     Error code format: myapp::module::number
     """
-    UNKNOWN_ERROR = "myapp::user::000"  # Unknown error
-    NOT_FOUND = "myapp::user::001"      # Resource not found
-    USERNAME_EXISTS = "myapp::user::002"  # Username already exists
+    UNKNOWN_ERROR = 'myapp::user::000'
+    NOT_FOUND = 'myapp::user::001'
+    USERNAME_EXISTS = 'myapp::user::002'
     # ... add more business error codes
 ```
 

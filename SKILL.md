@@ -160,31 +160,31 @@ class Errc(Enum):
     """Common error code enum"""
 
     # HTTP related errors
-    UNKNOWN_ERROR = "zimu::common::000"
-    RESOURCE_NOT_FOUND = "zimu::common::001"
-    METHOD_NOT_ALLOWED = "zimu::common::002"
+    UNKNOWN_ERROR = 'zimu::common::000'
+    RESOURCE_NOT_FOUND = 'zimu::common::001'
+    METHOD_NOT_ALLOWED = 'zimu::common::002'
 
     # Common errors
-    INTERNAL_SERVER_ERROR = "zimu::common::003"
-    BAD_REQUEST = "zimu::common::004"
-    UNAUTHORIZED = "zimu::common::005"
-    FORBIDDEN = "zimu::common::006"
+    INTERNAL_SERVER_ERROR = 'zimu::common::003'
+    BAD_REQUEST = 'zimu::common::004'
+    UNAUTHORIZED = 'zimu::common::005'
+    FORBIDDEN = 'zimu::common::006'
 
     # Timeout errors
-    TIMEOUT = "zimu::common::007"
+    TIMEOUT = 'zimu::common::007'
 
     # INVALID errors
-    INVALID_PARAMETER = "zimu::common::008"
-    INVALID_JSON = "zimu::common::009"
-    INVALID_TYPE = "zimu::common::010"
+    INVALID_PARAMETER = 'zimu::common::008'
+    INVALID_JSON = 'zimu::common::009'
+    INVALID_TYPE = 'zimu::common::010'
 
     # MISSING errors
-    MISSING_PARAMETER = "zimu::common::011"
-    MISSING_CONFIG = "zimu::common::012"
-    MISSING_SERVICE = "zimu::common::013"
-    MISSING_DAO = "zimu::common::014"
-    MISSING_API = "zimu::common::015"
-    MISSING_FIELD = "zimu::common::016"
+    MISSING_PARAMETER = 'zimu::common::011'
+    MISSING_CONFIG = 'zimu::common::012'
+    MISSING_SERVICE = 'zimu::common::013'
+    MISSING_DAO = 'zimu::common::014'
+    MISSING_API = 'zimu::common::015'
+    MISSING_FIELD = 'zimu::common::016'
 ```
 
 #### Shared Classes
