@@ -117,7 +117,7 @@ async def main():
     else:
         config_path = 'config/config.dev.toml'
 
-    with open(config_path, "rb") as f:
+    with open(config_path, 'rb') as f:
         config = tomllib.load(f)
 
     # Initialize logging
@@ -155,7 +155,7 @@ async def main():
         logger.exception(e)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     asyncio.run(main())
 ```
 

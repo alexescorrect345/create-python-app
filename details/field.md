@@ -28,8 +28,8 @@ class UserField:
         password: Password
     """
     id: Optional[int] = None
-    username: str = ""
-    password: str = ""
+    username: str = ''
+    password: str = ''
 
     def to_dict(self):
         """Convert to dictionary

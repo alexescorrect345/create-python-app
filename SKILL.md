@@ -433,7 +433,7 @@ class InternalApi:
             raise Error(ApiErrc.SESSION_NOT_FOUND.value, message)
 
         base_url = self._api_config["base_url"].rstrip('/')
-        full_url = f"{base_url}{url}"
+        full_url = f'{base_url}{url}'
         start_time = time.time()
         safe_headers = sanitize_headers(headers)
 
@@ -498,7 +498,7 @@ class InternalApi:
             raise Error(ApiErrc.SESSION_NOT_FOUND.value, message)
 
         base_url = self._api_config["base_url"].rstrip('/')
-        full_url = f"{base_url}{url}"
+        full_url = f'{base_url}{url}'
         start_time = time.time()
         safe_headers = sanitize_headers(headers)
 
@@ -563,7 +563,7 @@ class InternalApi:
             raise Error(ApiErrc.SESSION_NOT_FOUND.value, message)
 
         base_url = self._api_config["base_url"].rstrip('/')
-        full_url = f"{base_url}{url}"
+        full_url = f'{base_url}{url}'
         start_time = time.time()
         safe_headers = sanitize_headers(headers)
 
@@ -623,7 +623,7 @@ class InternalApi:
             raise Error(ApiErrc.SESSION_NOT_FOUND.value, message)
 
         base_url = self._api_config["base_url"].rstrip('/')
-        full_url = f"{base_url}{url}"
+        full_url = f'{base_url}{url}'
         start_time = time.time()
         safe_headers = sanitize_headers(headers)
 
@@ -713,7 +713,7 @@ class ExternalApi:
             raise Error(ApiErrc.SESSION_NOT_FOUND.value, message)
 
         base_url = self._api_config["base_url"].rstrip('/')
-        full_url = f"{base_url}{url}"
+        full_url = f'{base_url}{url}'
         start_time = time.time()
         safe_headers = sanitize_headers(headers)
 
@@ -770,7 +770,7 @@ class ExternalApi:
             raise Error(ApiErrc.SESSION_NOT_FOUND.value, message)
 
         base_url = self._api_config["base_url"].rstrip('/')
-        full_url = f"{base_url}{url}"
+        full_url = f'{base_url}{url}'
         start_time = time.time()
         safe_headers = sanitize_headers(headers)
 
@@ -827,7 +827,7 @@ class ExternalApi:
             raise Error(ApiErrc.SESSION_NOT_FOUND.value, message)
 
         base_url = self._api_config["base_url"].rstrip('/')
-        full_url = f"{base_url}{url}"
+        full_url = f'{base_url}{url}'
         start_time = time.time()
         safe_headers = sanitize_headers(headers)
 
@@ -879,7 +879,7 @@ class ExternalApi:
             raise Error(ApiErrc.SESSION_NOT_FOUND.value, message)
 
         base_url = self._api_config["base_url"].rstrip('/')
-        full_url = f"{base_url}{url}"
+        full_url = f'{base_url}{url}'
         start_time = time.time()
         safe_headers = sanitize_headers(headers)
 
@@ -923,7 +923,7 @@ Create the database layer files in `app/db/`:
 
 from app.db.DB import DB
 
-__all__ = ["DB"]
+__all__ = ['DB']
 ```
 
 #### 9.2 Create `app/db/DB.py`

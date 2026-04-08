@@ -259,7 +259,7 @@ def main():
     else:
         config_path = 'config/config.dev.toml'
 
-    with open(config_path, "rb") as f:
+    with open(config_path, 'rb') as f:
         config = tomllib.load(f)
 
     # Optional: Only import if the user chose a database in Step 1
@@ -325,7 +325,7 @@ def main():
     # Optional: Store database instance (only if user chose a database)
     # app["sqlite_db"] = sqlite_db
 
-    app.router.add_get("/hello", hello)
+    app.router.add_get('/hello', hello)
 
     app.on_startup.append(on_startup)
     app.on_cleanup.append(on_cleanup)
@@ -334,7 +334,7 @@ def main():
     web.run_app(app, host=host, port=port)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
 ```
 
@@ -438,7 +438,7 @@ Add after `app["sqlite_db"] = sqlite_db`:
 Add feature routes after existing route registrations:
 
 ```python
-    app.router.add_get("/hello", hello)
+    app.router.add_get('/hello', hello)
 
     # === Register feature routes ===
     user_handler.register_routes(app)

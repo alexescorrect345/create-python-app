@@ -39,15 +39,15 @@ Before executing any Service-related operations, you must check if the Service h
 
 ```python
 if self._user_service is None:
-    message = 'failed to find user_service'
+    message = 'missing user_service'
     self._logger.error(message)
-    raise Error(UserErrc.SERVICE_NOT_FOUND.value, message)
+    raise Error(CommonErrc.MISSING_SERVICE.value, message)
 ```
 
 **Notes**:
 - Consistent with the DAO Null Check pattern in the Service layer
 - Log format uses the `failed to find xxx` pattern
-- Must use the feature module's custom error code (e.g., `UserErrc.SERVICE_NOT_FOUND`)
+- Must use the common error code (e.g., `CommonErrc.MISSING_SERVICE`)
 
 #### Method Ordering
 
@@ -71,11 +71,11 @@ def register_routes(self, app: web.Application):
         app: aiohttp application
     """
     # Order: insert → update → delete → find
-    app.router.add_post("/users", self.insert)
-    app.router.add_put("/users/{id}", self.update_by_id)
-    app.router.add_delete("/users/{id}", self.delete_by_id)
-    app.router.add_get("/users/{id}", self.find_by_id)
-    app.router.add_get("/users", self.find)
+    app.router.add_post('/users', self.insert)
+    app.router.add_put('/users/{id}', self.update_by_id)
+    app.router.add_delete('/users/{id}', self.delete_by_id)
+    app.router.add_get('/users/{id}', self.find_by_id)
+    app.router.add_get('/users', self.find)
 ```
 
 #### Parameter Extraction Pattern
@@ -98,7 +98,7 @@ username = request.query.get("username") or None
 # Request body (empty string to None)
 request_data = await request.json()
 username = request_data.get("username")
-if username == "":
+if username == '':
     username = None
 ```
 
@@ -110,17 +110,17 @@ All Handler methods should return responses using the unified `SuccessResponse` 
 # ✅ Correct: Use default timestamp
 return web.json_response(
     SuccessResponse(
-        code="",
+        code='',
         data=<response_data>
     ).to_dict(),
     status=<HTTP status code>
 )
 
 # ❌ Wrong: Manually generate timestamp (SuccessResponse already has default)
-timestamp = datetime.utcnow().isoformat() + "Z"
+timestamp = datetime.utcnow().isoformat() + 'Z'
 return web.json_response(
     SuccessResponse(
-        code="",
+        code='',
         data=<response_data>,
         timestamp=timestamp  # Not needed
     ).to_dict()
@@ -143,7 +143,7 @@ Handler uses **Setter Injection** pattern for dependency injection:
 
 2. **Setter method injection for optional dependencies**:
    - `set_user_service(service)` - Inject user service
-   - Supports chaining: `handler.set_xxx_service(...).set_yyy_service(...)`
+
 
 3. **Lazy initialization**:
    - Handler can be created first, dependencies injected later
@@ -212,9 +212,9 @@ class UserHandler:
 
             # Service null check
             if self._user_service is None:
-                message = 'failed to find user_service'
+                message = 'missing user_service'
                 self._logger.error(message)
-                raise Error(UserErrc.SERVICE_NOT_FOUND.value, message)
+                raise Error(CommonErrc.MISSING_SERVICE.value, message)
 
             # Call service layer
             id = await self._user_service.insert(user=user_field)
@@ -222,7 +222,7 @@ class UserHandler:
             # Return success response
             return web.json_response(
                 SuccessResponse(
-                    code="",
+                    code='',
                     data=id
                 ).to_dict(),
                 status=201
@@ -254,9 +254,9 @@ class UserHandler:
             password = request_data.get("password")
 
             # Empty string means no update for this field
-            if username == "":
+            if username == '':
                 username = None
-            if password == "":
+            if password == '':
                 password = None
 
             # Build update params
@@ -268,9 +268,9 @@ class UserHandler:
 
             # Service null check
             if self._user_service is None:
-                message = 'failed to find user_service'
+                message = 'missing user_service'
                 self._logger.error(message)
-                raise Error(UserErrc.SERVICE_NOT_FOUND.value, message)
+                raise Error(CommonErrc.MISSING_SERVICE.value, message)
 
             # Call service layer
             user_field = await self._user_service.update_by_id(
@@ -281,7 +281,7 @@ class UserHandler:
             # Return success response
             return web.json_response(
                 SuccessResponse(
-                    code="",
+                    code='',
                     data=user_field
                 ).to_dict()
             )
@@ -308,9 +308,9 @@ class UserHandler:
 
             # Service null check
             if self._user_service is None:
-                message = 'failed to find user_service'
+                message = 'missing user_service'
                 self._logger.error(message)
-                raise Error(UserErrc.SERVICE_NOT_FOUND.value, message)
+                raise Error(CommonErrc.MISSING_SERVICE.value, message)
 
             # Call service layer
             await self._user_service.delete_by_id(id=id)
@@ -318,7 +318,7 @@ class UserHandler:
             # Return success response (empty data)
             return web.json_response(
                 SuccessResponse(
-                    code="",
+                    code='',
                     data={}
                 ).to_dict()
             )
@@ -345,9 +345,9 @@ class UserHandler:
 
             # Service null check
             if self._user_service is None:
-                message = 'failed to find user_service'
+                message = 'missing user_service'
                 self._logger.error(message)
-                raise Error(UserErrc.SERVICE_NOT_FOUND.value, message)
+                raise Error(CommonErrc.MISSING_SERVICE.value, message)
 
             # Call service layer
             user_field = await self._user_service.find_by_id(id=id)
@@ -355,7 +355,7 @@ class UserHandler:
             # Return success response
             return web.json_response(
                 SuccessResponse(
-                    code="",
+                    code='',
                     data=user_field
                 ).to_dict()
             )
@@ -387,9 +387,9 @@ class UserHandler:
 
             # Service null check
             if self._user_service is None:
-                message = 'failed to find user_service'
+                message = 'missing user_service'
                 self._logger.error(message)
-                raise Error(UserErrc.SERVICE_NOT_FOUND.value, message)
+                raise Error(CommonErrc.MISSING_SERVICE.value, message)
 
             # Call service layer
             if page_raw is None and page_size_raw is None:
@@ -414,7 +414,7 @@ class UserHandler:
             # Return success response
             return web.json_response(
                 SuccessResponse(
-                    code="",
+                    code='',
                     data={
                         "items": user_list,
                         "pagination": pagination
@@ -437,9 +437,9 @@ class UserHandler:
             app: aiohttp application
         """
         # Order: insert → update → delete → find
-        app.router.add_post("/users", self.insert)
-        app.router.add_put("/users/{id}", self.update_by_id)
-        app.router.add_delete("/users/{id}", self.delete_by_id)
-        app.router.add_get("/users/{id}", self.find_by_id)
-        app.router.add_get("/users", self.find)
+        app.router.add_post('/users', self.insert)
+        app.router.add_put('/users/{id}', self.update_by_id)
+        app.router.add_delete('/users/{id}', self.delete_by_id)
+        app.router.add_get('/users/{id}', self.find_by_id)
+        app.router.add_get('/users', self.find)
 ```
