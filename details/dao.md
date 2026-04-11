@@ -110,7 +110,7 @@ import logging
 
 from app.common import Error, Pagination
 from app.db.common import Errc as DbErrc
-from app.db.DB import DB
+from app.db import DB
 from app.feature.user import UserField
 
 class UserDao:
@@ -154,6 +154,8 @@ class UserDao:
             '''
             await self._db.exec(sql)
             self._logger.info(f'succeeded to initialize {self._TABLE_NAME} table with config={self._config}')
+        except Error:
+            raise
         except Exception as e:
             message = f'failed to initialize {self._TABLE_NAME} table with config={self._config}'
             self._logger.error(message)
@@ -175,6 +177,8 @@ class UserDao:
             id = result[0][0] if result else None
             self._logger.info(f'succeeded to insert user with username={user.username}, id={id}')
             return id
+        except Error:
+            raise
         except Exception as e:
             message = f'failed to insert user with username={user.username}'
             self._logger.error(message)
@@ -210,6 +214,8 @@ class UserDao:
             sql = f'UPDATE {self._TABLE_NAME} SET {", ".join(updates)} WHERE id = ?'
             await self._db.exec(sql, sql_params)
             self._logger.info(f'succeeded to update user with id={id}, params={params}')
+        except Error:
+            raise
         except Exception as e:
             message = f'failed to update user with id={id}, params={params}'
             self._logger.error(message)
@@ -228,6 +234,8 @@ class UserDao:
             sql = f'DELETE FROM {self._TABLE_NAME} WHERE id = ?'
             await self._db.exec(sql, (id,))
             self._logger.info(f'succeeded to delete user with id={id}')
+        except Error:
+            raise
         except Exception as e:
             message = f'failed to delete user with id={id}'
             self._logger.error(message)
@@ -255,6 +263,8 @@ class UserDao:
             )
             self._logger.debug(f'succeeded to find user by id with id={id}, result={result}')
             return result
+        except Error:
+            raise
         except Exception as e:
             message = f'failed to find user by id with id={id}'
             self._logger.error(message)
@@ -282,6 +292,8 @@ class UserDao:
             )
             self._logger.debug(f'succeeded to find user by username with username={username}, result={result}')
             return result
+        except Error:
+            raise
         except Exception as e:
             message = f'failed to find user by username with username={username}'
             self._logger.error(message)
@@ -340,6 +352,8 @@ class UserDao:
                 f'succeeded to find users with params={params}, page={page}, page_size={page_size}, pagination={pagination}'
             )
             return results, pagination
+        except Error:
+            raise
         except Exception as e:
             message = f'failed to find users with params={params}, page={page}, page_size={page_size}'
             self._logger.error(message)

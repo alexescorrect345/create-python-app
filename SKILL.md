@@ -921,7 +921,7 @@ Create the database layer files in `app/db/`:
 ```python
 """Database module"""
 
-from app.db.DB import DB
+from app.db import DB
 
 __all__ = ['DB']
 ```
