@@ -14,8 +14,9 @@ from typing import Any, Dict, List, Optional, Tuple
 from pathlib import Path
 
 import aiosqlite
+import aiofiles.os
 
-from app.common import Errc, Error
+from app.common import Errc as CommonErrc, Error
 from app.db import DB
 from app.db.common import Errc as DbErrc
 
@@ -58,49 +59,50 @@ class SqliteDB(DB):
 
         Raises:
             Error:
-                - Missing db_path config: Errc.MISSING_CONFIG
-                - Invalid db_path type: Errc.INVALID_TYPE
-                - Connection failed: DbErrc.CONNECT_FAILED
+                - Missing db_path config: DbErrc.MISSING_DB_PATH
+                - Failed to create directory: DbErrc.FAILED_TO_MK_DB_DIR
+                - Connection failed: DbErrc.FAILED_TO_CONNECT
         """
         if "db_path" not in self._config:
-            message = f"failed to validate config, missing required 'db_path' field, config keys: {list(self._config.keys())}"
+            message = f'missing db_path with config={self._config}'
             self._logger.error(message)
-            raise Error(Errc.MISSING_CONFIG.value, message)
+            raise Error(DbErrc.MISSING_DB_PATH.value, message)
 
         db_path = self._config["db_path"]
-        if not isinstance(db_path, (str, Path)):
-            message = f'failed to validate config, db_path must be string or Path type, actual: {type(db_path).__name__}'
-            self._logger.error(message)
-            raise Error(Errc.INVALID_TYPE.value, message)
-
-        db_path = Path(db_path)
         check_same_thread = self._config.get("check_same_thread", True)
         timeout_s = self._config.get("timeout_s", 5.0)
         isolation_level = self._config.get("isolation_level", None)
 
         try:
-            if str(db_path) != ':memory:':
-                if db_path.parent and str(db_path.parent) != ".":
-                    db_path.parent.mkdir(parents=True, exist_ok=True)
-                    self._logger.info(f'created directory for database: {db_path.parent}')
+            if db_path != ':memory:':
+                db_path_obj = Path(db_path)
+                if db_path_obj.parent and str(db_path_obj.parent) != ".":
+                    await aiofiles.os.makedirs(str(db_path_obj.parent), exist_ok=True)
+                    self._logger.info(f'succeeded to create directory for database with db_path={db_path}')
+        except Error:
+            raise
+        except Exception as e:
+            message = f'failed to create directory for database with db_path={db_path}'
+            self._logger.error(message)
+            raise Error(DbErrc.FAILED_TO_MK_DB_DIR.value, message) from e
 
+        try:
             self._connection = await aiosqlite.connect(
-                database=str(db_path),
+                database=db_path,
                 check_same_thread=check_same_thread,
                 timeout=timeout_s,
                 isolation_level=isolation_level
             )
 
-            db_type = 'memory' if str(db_path) == ':memory:' else 'file'
-            self._logger.info(f'succeeded to connect to sqlite database, type: {db_type}, path: {db_path}')
+            self._logger.info(f'succeeded to connect to sqlite database with db_path={db_path}')
 
         except Error:
             raise
         except Exception as e:
             self._connection = None
-            message = f'failed to connect to sqlite database, db_path: {db_path}'
+            message = f'failed to connect to sqlite database with db_path={db_path}'
             self._logger.error(message)
-            raise Error(DbErrc.CONNECT_FAILED.value, message) from e
+            raise Error(DbErrc.FAILED_TO_CONNECT.value, message) from e
 
     async def close(self) -> None:
         """Async close SQLite database connection
@@ -112,12 +114,12 @@ class SqliteDB(DB):
         4. Clean up connection object
 
         Raises:
-            Error: Close failed with DbErrc.DISCONNECT_FAILED
+            Error: Close failed with DbErrc.FAILED_TO_DISCONNECT
         """
         if self._connection is not None:
             try:
                 await self._connection.commit()
-                self._logger.info(f'committed pending transactions before closing, db_path: {self._config.get("db_path", 'unknown')}')
+                self._logger.info(f'succeeded to commit pending transactions before closing with db_path={self._config.get("db_path", "unknown")}')
 
                 await self._connection.close()
                 self._logger.info(f'succeeded to close sqlite database connection, db_path: {self._config.get("db_path", 'unknown')}')
@@ -125,12 +127,12 @@ class SqliteDB(DB):
             except Exception as e:
                 message = f'failed to close sqlite database connection, db_path: {self._config.get("db_path", 'unknown')}'
                 self._logger.error(message)
-                raise Error(DbErrc.DISCONNECT_FAILED.value, message) from e
+                raise Error(DbErrc.FAILED_TO_DISCONNECT.value, message) from e
 
             finally:
                 self._connection = None
         else:
-            self._logger.info(f'connection already closed or never established, db_path: {self._config.get("db_path", 'unknown')}')
+            self._logger.info(f'succeeded to close sqlite database connection with db_path={self._config.get("db_path", "unknown")}')
 
     async def exec(
         self,
@@ -153,27 +155,17 @@ class SqliteDB(DB):
 
         Raises:
             Error:
-                - Execution failed: DbErrc.EXECUTION_FAILED
+                - Empty script: DbErrc.MISSING_SCRIPT
                 - Not connected: DbErrc.NOT_CONNECTED
-                - Invalid params: Errc.INVALID_TYPE or DbErrc.MISSING_SCRIPT
+                - Execution failed: DbErrc.FAILED_TO_EXEC
         """
-        if not isinstance(script, str):
-            message = f'failed to validate script parameter, expected str type, actual: {type(script).__name__}'
-            self._logger.error(message)
-            raise Error(Errc.INVALID_TYPE.value, message)
-
         if not script.strip():
-            message = f'failed to execute script, script is empty, db_path: {self._config.get("db_path", 'unknown')}'
+            message = f'missing script with db_path={self._config.get("db_path", "unknown")}'
             self._logger.error(message)
             raise Error(DbErrc.MISSING_SCRIPT.value, message)
 
-        if params is not None and not isinstance(params, tuple):
-            message = f'failed to validate params parameter, expected tuple or None, actual: {type(params).__name__}'
-            self._logger.error(message)
-            raise Error(Errc.INVALID_TYPE.value, message)
-
-        if not self.is_connected or self._connection is None:
-            message = f'attempted to execute script without database connection, db_path: {self._config.get("db_path", 'unknown')}'
+        if self._connection is None:
+            message = f'did not connect to database with db_path={self._config.get("db_path", "unknown")}'
             self._logger.error(message)
             raise Error(DbErrc.NOT_CONNECTED.value, message)
 
@@ -182,9 +174,7 @@ class SqliteDB(DB):
         try:
             cursor = await self._connection.cursor()
 
-            self._logger.debug(f'executing script: {script}')
-            if params:
-                self._logger.debug(f'with params: {params}')
+            self._logger.debug(f'executing script={script}, params={params}')
 
             if params is None:
                 await cursor.execute(script)
@@ -199,16 +189,16 @@ class SqliteDB(DB):
             )
 
             if is_query:
-                results = await cursor.fetchall()
-                result_count = len(results) if results else 0
-                self._logger.info(f'query executed successfully, returned {result_count} rows')
-                return results if results else []
+                rows = await cursor.fetchall()
+                row_count = len(rows) if rows else 0
+                self._logger.debug(f'query executed successfully, returned {row_count} rows')
+                return rows if rows else []
             else:
                 if self._config.get("isolation_level") is not None:
                     await self._connection.commit()
-                    self._logger.info(f'transaction committed, db_path: {self._config.get("db_path", 'unknown')}')
+                    self._logger.debug(f'transaction committed, db_path: {self._config.get("db_path", "unknown")}')
 
-                self._logger.info(f'script executed successfully (non-query), db_path: {self._config.get("db_path", 'unknown')}')
+                self._logger.debug(f'succeeded to execute non-query script with db_path={self._config.get("db_path", "unknown")}')
                 return None
 
         except Error:
@@ -217,102 +207,76 @@ class SqliteDB(DB):
             if self._config.get("isolation_level") is not None:
                 try:
                     await self._connection.rollback()
-                except Exception:
-                    self._logger.error(f'failed to rollback transaction, db_path: {self._config.get("db_path", 'unknown')}')
-                    self._logger.exception(e)
+                except Exception as e1:
+                    self._logger.error(f'failed to rollback transaction with db_path={self._config.get("db_path", "unknown")}')
+                    self._logger.exception(e1)
 
-            message = f'failed to execute script, db_path: {self._config.get("db_path", 'unknown')}, script: {script.strip()}'
+            message = f'failed to execute script with db_path={self._config.get("db_path", "unknown")}, script={script.strip()}, params={params}'
             self._logger.error(message)
-            raise Error(DbErrc.EXECUTION_FAILED.value, message) from e
+            raise Error(DbErrc.FAILED_TO_EXEC.value, message) from e
 
         finally:
             if cursor is not None:
-                await cursor.close()
-                self._logger.debug(f'cursor closed, db_path: {self._config.get("db_path", 'unknown')}')
+                try:
+                    await cursor.close()
+                    self._logger.debug(f'succeeded to close cursor with db_path={self._config.get("db_path", "unknown")}')
+                except Exception as e1:
+                    self._logger.error(f'failed to close cursor with db_path={self._config.get("db_path", "unknown")}')
+                    self._logger.exception(e1)
 
     async def batch_exec(
         self,
         scripts: List[str],
-        params_list: Optional[List[Optional[Tuple[Any, ...]]]] = None
-    ) -> Optional[List[List[Tuple[Any, ...]]]]:
+        params_list: List[Optional[Tuple[Any, ...]]] = []
+    ) -> List[List[Tuple[Any, ...]]]:
         """Async batch execute multiple scripts
 
+        Supported operations:
+        - SELECT/PRAGMA: Returns query result list for each query
+        - INSERT/UPDATE/DELETE: Returns result list if contains RETURNING clause, otherwise skipped
+        - CREATE/DROP: Skipped in result list
+
         Args:
-            scripts: Script string array, each element is a script to execute
-            params_list: Parameter tuple array, corresponds to scripts array, each element can be None, default empty array
+            scripts: Script string list, each element is a SQL statement to execute
+            params_list: SQL parameter tuple list corresponding to scripts, each element can be None, default empty list
 
         Returns:
-            Query result list (result list for each query) or None
+            Query result list (only query scripts), or empty list if no query scripts
 
         Raises:
-            Error: Script execution failed with DbErrc.EXECUTION_FAILED or Errc.INVALID_TYPE
+            Error:
+                - Empty scripts: DbErrc.MISSING_SCRIPT
+                - Not connected: DbErrc.NOT_CONNECTED
+                - Execution failed: DbErrc.FAILED_TO_EXEC
         """
-        if not isinstance(scripts, list):
-            message = f'failed to validate scripts parameter, expected list type, actual: {type(scripts).__name__}'
-            self._logger.error(message)
-            raise Error(Errc.INVALID_TYPE.value, message)
-
-        if len(scripts) == 0:
-            message = f'failed to validate scripts, list is empty, db_path: {self._config.get("db_path", 'unknown')}'
+        if not scripts:
+            message = f'missing scripts with db_path={self._config.get("db_path", "unknown")}'
             self._logger.error(message)
             raise Error(DbErrc.MISSING_SCRIPT.value, message)
 
-        if params_list is None:
-            params_list = []
-
-        if not isinstance(params_list, list):
-            message = f'failed to validate params_list parameter, expected list or None, actual: {type(params_list).__name__}'
-            self._logger.error(message)
-            raise Error(Errc.INVALID_TYPE.value, message)
-
-        if len(params_list) != 0 and len(params_list) != len(scripts):
-            message = f'failed to validate params_list, length {len(params_list)} must match scripts list length {len(scripts)}'
-            self._logger.error(message)
-            raise Error(Errc.INVALID_TYPE.value, message)
-
-        for i, script in enumerate(scripts):
-            if not isinstance(script, str):
-                message = f'failed to validate scripts[{i}], expected str type, actual: {type(script).__name__}'
-                self._logger.error(message)
-                raise Error(Errc.INVALID_TYPE.value, message)
-            if not script.strip():
-                message = f'failed to validate scripts[{i}], script is empty, db_path: {self._config.get("db_path", 'unknown')}'
-                self._logger.error(message)
-                raise Error(DbErrc.MISSING_SCRIPT.value, message)
-
-        if len(params_list) > 0:
-            for i, param in enumerate(params_list):
-                if param is not None and not isinstance(param, tuple):
-                    message = f'failed to validate params_list[{i}], expected tuple or None, actual: {type(param).__name__}'
-                    self._logger.error(message)
-                    raise Error(Errc.INVALID_TYPE.value, message)
-
-        if not self.is_connected or self._connection is None:
-            message = f'attempted to execute scripts without database connection, db_path: {self._config.get("db_path", 'unknown')}'
+        if self._connection is None:
+            message = f'did not connect to database with db_path={self._config.get("db_path", "unknown")}'
             self._logger.error(message)
             raise Error(DbErrc.NOT_CONNECTED.value, message)
 
         cursor: Optional[aiosqlite.Cursor] = None
         result_list: List[List[Tuple[Any, ...]]] = []
-        has_query = False
 
         try:
             cursor = await self._connection.cursor()
 
             script_count = len(scripts)
-            self._logger.info(f'batch executing {script_count} scripts')
+            self._logger.debug(f'batch executing {script_count} scripts with db_path={self._config.get("db_path", "unknown")}')
 
             for i, script in enumerate(scripts):
-                self._logger.debug(f'executing script {i+1}/{script_count}: {script.strip()}')
+                params = params_list[i] if i < len(params_list) else None
 
-                param = params_list[i] if len(params_list) > 0 else None
-                if param is not None:
-                    self._logger.debug(f'with param: {param}')
+                self._logger.debug(f'executing script {i+1}/{script_count}, script={script.strip()}, params={params}')
 
-                if param is None:
+                if params is None:
                     await cursor.execute(script)
                 else:
-                    await cursor.execute(script, param)
+                    await cursor.execute(script, params)
 
                 script_upper = script.strip().upper()
                 is_query = (
@@ -322,21 +286,16 @@ class SqliteDB(DB):
                 )
 
                 if is_query:
-                    has_query = True
-                    results = await cursor.fetchall()
-                    result_list.append(results if results else [])
-                else:
-                    result_list.append([])
+                    rows = await cursor.fetchall()
+                    result_list.append(rows if rows else [])
 
             if self._config.get("isolation_level") is not None:
                 await self._connection.commit()
-                self._logger.info(f'transaction committed, db_path: {self._config.get("db_path", 'unknown')}')
+                self._logger.debug(f'succeeded to commit transaction with db_path={self._config.get("db_path", "unknown")}')
 
-            self._logger.info(f'batch executed successfully, {script_count} scripts completed')
+            self._logger.debug(f'succeeded to batch execute {script_count} scripts with db_path={self._config.get("db_path", "unknown")}')
 
-            if has_query:
-                return result_list
-            return None
+            return result_list
 
         except Error:
             raise
@@ -344,16 +303,20 @@ class SqliteDB(DB):
             if self._config.get("isolation_level") is not None:
                 try:
                     await self._connection.rollback()
-                except Exception:
-                    self._logger.error(f'failed to rollback transaction, db_path: {self._config.get("db_path", 'unknown')}')
-                    self._logger.exception(e)
+                except Exception as e1:
+                    self._logger.error(f'failed to rollback transaction with db_path={self._config.get("db_path", "unknown")}')
+                    self._logger.exception(e1)
 
-            message = f'failed to batch execute scripts, db_path: {self._config.get("db_path", 'unknown')}, script_count: {script_count}'
+            message = f'failed to batch execute scripts with db_path={self._config.get("db_path", "unknown")}, script_count={len(scripts)}'
             self._logger.error(message)
-            raise Error(DbErrc.EXECUTION_FAILED.value, message) from e
+            raise Error(DbErrc.FAILED_TO_EXEC.value, message) from e
 
         finally:
             if cursor is not None:
-                await cursor.close()
-                self._logger.debug(f'cursor closed, db_path: {self._config.get("db_path", 'unknown')}')
+                try:
+                    await cursor.close()
+                    self._logger.debug(f'succeeded to close cursor with db_path={self._config.get("db_path", "unknown")}')
+                except Exception as e1:
+                    self._logger.error(f'failed to close cursor with db_path={self._config.get("db_path", "unknown")}')
+                    self._logger.exception(e1)
 ```

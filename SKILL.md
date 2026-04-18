@@ -945,7 +945,6 @@ class DB(ABC):
         self._config = config
         self._connection = None
 
-    @property
     def is_connected(self) -> bool:
         """Whether database is connected"""
         return self._connection is not None
@@ -981,16 +980,16 @@ class DB(ABC):
     async def batch_exec(
         self,
         scripts: List[str],
-        params_list: Optional[List[Optional[Tuple[Any, ...]]]] = None
-    ) -> Optional[List[List[Tuple[Any, ...]]]]:
+        params_list: List[Optional[Tuple[Any, ...]]] = []
+    ) -> List[List[Tuple[Any, ...]]]:
         """Batch execute SQL scripts
 
         Args:
             scripts: SQL script list
-            params_list: Parameter tuple list
+            params_list: Parameter tuple list, default empty list
 
         Returns:
-            Query result list (result list for each execution) or None
+            Query result list (only query scripts), or empty list if no query scripts
         """
         pass
 ```
@@ -1006,23 +1005,23 @@ from enum import Enum
 class Errc(Enum):
     """Database error code enum"""
 
-    # Configuration errors
+    # Common errors
     UNKNOWN_ERROR = 'myapp::db::000'
-    MISSING_SCRIPT = 'myapp::db::001'
+
+    # Configuration errors
+    MISSING_DB_PATH = 'myapp::db::001'
 
     # Connection errors
-    CONNECT_FAILED = 'myapp::db::002'
-    DISCONNECT_FAILED = 'myapp::db::003'
+    FAILED_TO_CONNECT = 'myapp::db::002'
+    FAILED_TO_DISCONNECT = 'myapp::db::003'
     NOT_CONNECTED = 'myapp::db::004'
 
-    # Query errors
-    QUERY_FAILED = 'myapp::db::005'
-    EXECUTION_FAILED = 'myapp::db::006'
+    # Filesystem errors
+    FAILED_TO_MK_DB_DIR = 'myapp::db::005'
 
-    # Operation errors
-    INSERT_FAILED = 'myapp::db::007'
-    UPDATE_FAILED = 'myapp::db::008'
-    DELETE_FAILED = 'myapp::db::009'
+    # Execution errors
+    MISSING_SCRIPT = 'myapp::db::006'
+    FAILED_TO_EXEC = 'myapp::db::007'
 ```
 
 #### 9.4 Create `app/db/{Name}DB.py` (Optional)
