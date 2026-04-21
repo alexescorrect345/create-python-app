@@ -42,7 +42,7 @@ Before executing all DAO-related operations, must check if DAO is initialized. I
 
 ```python
 if self._user_dao is None:
-    message = f'failed to find user_dao in UserService'
+    message = f'missing user_dao with <params>={}'
     self._logger.error(message)
     raise Error(CommonErrc.MISSING_DAO.value, message)
 ```
@@ -126,31 +126,24 @@ class UserService:
         """
         # DAO null check
         if self._user_dao is None:
-            message = f'failed to find user_dao in {self.__class__.__name__}'
+            message = f'missing user_dao with user_field={user_field}'
             self._logger.error(message)
             raise Error(CommonErrc.MISSING_DAO.value, message)
 
         # Business logic: validate required fields
         if not user_field.username:
-            message = f'failed to validate user with username={user_field.username}'
+            message = f'missing username with user_field={user_field}'
             self._logger.error(message)
-            raise Error(UserErrc.USERNAME_REQUIRED.value, message)
-
-        # Business logic: check if username already exists
-        existing_user_field = await self._user_dao.find_by_username(username=user_field.username)
-        if existing_user_field:
-            message = f'failed to insert user with username={user_field.username}, username already exists'
-            self._logger.error(message)
-            raise Error(UserErrc.USERNAME_EXISTS.value, message)
+            raise Error(UserErrc.MISSING_USERNAME.value, message)
 
         # Create user
-        id = await self._user_dao.insert(user=user_field)
-        self._logger.info(f'succeeded to insert user with username={user_field.username}, id={id}')
+        id = await self._user_dao.insert(user_field)
+        self._logger.info(f'succeeded to insert user with user_field={user_field}, id={id}')
 
         # Return user ID
         return id
 
-    async def update_by_id(self, id: int, params: dict) -> UserField:
+    async def update_by_id(self, id: int, params: dict) -> None:
         """Update user by ID
 
         Args:
@@ -158,39 +151,25 @@ class UserService:
             params: Update parameter dictionary, supported keys:
                 - username: New username (optional)
                 - password: New password (optional)
-
-        Returns:
-            Updated user field object
         """
         # DAO null check
         if self._user_dao is None:
-            message = f'failed to find user_dao in {self.__class__.__name__}'
+            message = f'missing user_dao with id={id}, params={params}'
             self._logger.error(message)
             raise Error(CommonErrc.MISSING_DAO.value, message)
 
         # Check if user exists
         user_field = await self._user_dao.find_by_id(id)
         if not user_field:
-            message = f'failed to find user by id={id}'
+            message = f'missing user_field with id={id}, params={params}'
             self._logger.error(message)
-            raise Error(CommonErrc.MISSING_FIELD.value, message)
-
-        # If updating username, check if new username already exists
-        username = params.get("username")
-        if username and username != user_field.username:
-            user_list = await self._user_dao.find(params={"username": username})
-            if user_list[0]:
-                message = f'failed to update user with username={username}, username already exists'
-                self._logger.error(message)
-                raise Error(UserErrc.USERNAME_EXISTS.value, message)
+            raise Error(UserErrc.MISSING_USER_FIELD.value, message)
 
         # Update user
         await self._user_dao.update_by_id(id, params=params)
         self._logger.info(f'succeeded to update user with id={id}, params={params}')
 
-        # Return updated user
-        user_field = await self._user_dao.find_by_id(id)
-        return user_field
+        return None
 
     async def delete_by_id(self, id: int) -> None:
         """Delete user by ID
@@ -200,50 +179,38 @@ class UserService:
         """
         # DAO null check
         if self._user_dao is None:
-            message = f'failed to find user_dao in {self.__class__.__name__}'
+            message = f'missing user_dao with id={id}'
             self._logger.error(message)
             raise Error(CommonErrc.MISSING_DAO.value, message)
-
-        # Check if user exists
-        user_field = await self._user_dao.find_by_id(id)
-        if not user_field:
-            message = f'failed to find user by id={id}'
-            self._logger.error(message)
-            raise Error(CommonErrc.MISSING_FIELD.value, message)
 
         # Delete user
         await self._user_dao.delete_by_id(id)
         self._logger.info(f'succeeded to delete user with id={id}')
 
-    async def find_by_id(self, id: int) -> UserField:
+    async def find_by_id(self, id: int, field_type: FieldType = FieldType.SIMPLE) -> UserField | None:
         """Find user by ID
 
         Args:
             id: User ID
+            field_type: Query type (FieldType.SIMPLE or FieldType.FULL)
 
         Returns:
-            User field object
+            User field object or None
         """
         # DAO null check
         if self._user_dao is None:
-            message = f'failed to find user_dao in {self.__class__.__name__}'
+            message = f'missing user_dao with id={id}'
             self._logger.error(message)
             raise Error(CommonErrc.MISSING_DAO.value, message)
 
-        # Query user
-        user_field = await self._user_dao.find_by_id(id)
-        if not user_field:
-            message = f'failed to find user by id={id}'
-            self._logger.error(message)
-            raise Error(CommonErrc.MISSING_FIELD.value, message)
-
-        return user_field
+        return await self._user_dao.find_by_id(id, field_type)
 
     async def find(
         self,
         params: dict,
         page: int = 1,
-        page_size: int = sys.maxsize
+        page_size: int = sys.maxsize,
+        field_type: FieldType = FieldType.SIMPLE
     ) -> tuple[list[UserField], Pagination]:
         """Find users
 
@@ -252,20 +219,22 @@ class UserService:
                 - username: Username (optional)
             page: Page number (starting from 1)
             page_size: Number of items per page
+            field_type: Query type (FieldType.SIMPLE or FieldType.FULL)
 
         Returns:
             User field object list with pagination info
         """
         # DAO null check
         if self._user_dao is None:
-            message = f'failed to find user_dao in {self.__class__.__name__}'
+            message = f'missing user_dao with params={params}, page={page}, page_size={page_size}'
             self._logger.error(message)
             raise Error(CommonErrc.MISSING_DAO.value, message)
 
         user_list, pagination = await self._user_dao.find(
             params=params,
             page=page,
-            page_size=page_size
+            page_size=page_size,
+            field_type=field_type
         )
         return user_list, pagination
 ```

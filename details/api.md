@@ -113,12 +113,11 @@ class UserApi(InternalApi):
         Raises:
             Error: API request failed
         """
-        response = await self._post('/users', {
+        return await self._post('/users', {
             "username": username,
             "password": password,
             "email": email
         })
-        return response
 
     async def update_user_by_id(self, id: int, params: Dict[str, Any]) -> SuccessResponse:
         """Update user by ID
@@ -158,8 +157,7 @@ class UserApi(InternalApi):
         Raises:
             Error: API request failed
         """
-        response = await self._get(f'/users/{id}')
-        return response
+        return await self._get(f'/users/{id}')
 
     async def find_user(
         self,
@@ -178,8 +176,7 @@ class UserApi(InternalApi):
         Raises:
             Error: API request failed
         """
-        response = await self._get('/users', params=params)
-        return response
+        return await self._get('/users', params=params)
 ```
 
 ### Complete Derived ExternalApi Template

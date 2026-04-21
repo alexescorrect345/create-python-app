@@ -171,30 +171,30 @@ class UserDao:
         await self._db.exec(script=index_username_script)
         self._logger.info(f'succeeded to initialize {self._TABLE_NAME} table with config={self._config}')
 
-    async def insert(self, user: UserField) -> int:
+    async def insert(self, user_field: UserField) -> int:
         """Insert user
 
         Args:
-            user: User field object
+            user_field: User field object
 
         Returns:
             User ID
         """
         if self._db is None:
-            message = f'missing db, failed to insert user with user_field={user}'
+            message = f'missing db, failed to insert user with user_field={user_field}'
             self._logger.error(message)
             raise Error(DbErrc.MISSING_DB.value, message)
 
         insert_script = f'INSERT INTO {self._TABLE_NAME} (username, password) VALUES (?, ?)'
-        await self._db.exec(insert_script, (user.username, user.password))
+        await self._db.exec(insert_script, (user_field.username, user_field.password))
         query_script = 'SELECT last_insert_rowid()'
         rows = await self._db.exec(query_script)
         if not rows or rows[0][0] is None:
-            message = f'failed to find inserted user id with user_field={user}'
+            message = f'failed to find inserted user id with user_field={user_field}'
             self._logger.error(message)
             raise Error(UserErrc.FAILED_TO_FIND_INSERTED_ID.value, message)
         user_id = int(rows[0][0])
-        self._logger.info(f'succeeded to insert user with user_id={user_id}, user_field={user}')
+        self._logger.info(f'succeeded to insert user with user_id={user_id}, user_field={user_field}')
         return user_id
 
     async def update_by_id(self, id: int, params: dict[str, Any]) -> None:
