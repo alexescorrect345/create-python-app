@@ -35,7 +35,7 @@ This order ensures a logical flow from table setup → data manipulation → dat
 ```python
 # ✅ Correct: Use single quotes
 sql = f'SELECT id, username, password FROM {self._TABLE_NAME} WHERE id = ?'
-sql = f'INSERT INTO {self._TABLE_NAME} (username, password) VALUES (?, ?) RETURNING id'
+sql = f'INSERT INTO {self._TABLE_NAME} (username, password) VALUES (?, ?)'
 updates.append('username = ?')
 
 # ✅ Correct: Use three single quotes for line breaks
@@ -120,6 +120,7 @@ class UserDao:
 
     _logger = logging.getLogger(__name__)
     _TABLE_NAME = 't_user'
+    _INIT_SEQ = 1000000
 
     def __init__(self, config: dict):
         """Initialize
@@ -147,7 +148,7 @@ class UserDao:
             Error: Thrown when database operation fails
         """
         if self._db is None:
-            message = f'missing db, failed to initialize {self._TABLE_NAME} table'
+            message = f'missing db with {self._TABLE_NAME}'
             self._logger.error(message)
             raise Error(DbErrc.MISSING_DB.value, message)
 
@@ -161,7 +162,7 @@ class UserDao:
 
         init_seq_script = f'''
         INSERT OR REPLACE INTO sqlite_sequence (name, seq)
-        VALUES ('{self._TABLE_NAME}', 1000000);
+        VALUES ('{self._TABLE_NAME}', {self._INIT_SEQ});
         '''
 
         index_username_script = f'CREATE INDEX IF NOT EXISTS idx_user_username ON {self._TABLE_NAME}(username);'
@@ -169,7 +170,7 @@ class UserDao:
         await self._db.exec(script=create_table_script)
         await self._db.exec(script=init_seq_script)
         await self._db.exec(script=index_username_script)
-        self._logger.info(f'succeeded to initialize {self._TABLE_NAME} table with config={self._config}')
+        self._logger.info(f'succeeded to initialize {self._TABLE_NAME} table')
 
     async def insert(self, user_field: UserField) -> int:
         """Insert user
@@ -181,7 +182,7 @@ class UserDao:
             User ID
         """
         if self._db is None:
-            message = f'missing db, failed to insert user with user_field={user_field}'
+            message = f'missing db with user_field={user_field}'
             self._logger.error(message)
             raise Error(DbErrc.MISSING_DB.value, message)
 
@@ -193,9 +194,9 @@ class UserDao:
             message = f'failed to find inserted user id with user_field={user_field}'
             self._logger.error(message)
             raise Error(UserErrc.FAILED_TO_FIND_INSERTED_ID.value, message)
-        user_id = int(rows[0][0])
-        self._logger.info(f'succeeded to insert user with user_id={user_id}, user_field={user_field}')
-        return user_id
+        id = int(rows[0][0])
+        self._logger.info(f'succeeded to insert user with id={id}, user_field={user_field}')
+        return id
 
     async def update_by_id(self, id: int, params: dict[str, Any]) -> None:
         """Update user by ID
@@ -210,7 +211,7 @@ class UserDao:
             Error: Thrown when update fails
         """
         if self._db is None:
-            message = f'missing db, failed to update user with id={id}, params={params}'
+            message = f'missing db with id={id}, params={params}'
             self._logger.error(message)
             raise Error(DbErrc.MISSING_DB.value, message)
 
@@ -242,19 +243,13 @@ class UserDao:
             Error: Thrown when deletion fails
         """
         if self._db is None:
-            message = f'missing db, failed to delete user with id={id}'
+            message = f'missing db with id={id}'
             self._logger.error(message)
             raise Error(DbErrc.MISSING_DB.value, message)
 
-        user_field = await self.find_by_id(id)
-        if user_field is None:
-            message = f'missing user, failed to delete user with id={id}'
-            self._logger.error(message)
-            raise Error(UserErrc.MISSING_USER.value, message)
-
         sql = f'DELETE FROM {self._TABLE_NAME} WHERE id = ?'
         await self._db.exec(sql, (id,))
-        self._logger.info(f'succeeded to delete user, user_field={user_field}')
+        self._logger.info(f'succeeded to delete user with id={id}')
 
     async def find_by_id(self, id: int, field_type: FieldType = FieldType.SIMPLE) -> Optional[UserField]:
         """Find user by ID
@@ -267,7 +262,7 @@ class UserDao:
             User field object, returns None if not found
         """
         if self._db is None:
-            message = f'missing db, failed to find user by id with id={id}'
+            message = f'missing db with id={id}, field_type={field_type}'
             self._logger.error(message)
             raise Error(DbErrc.MISSING_DB.value, message)
 
@@ -290,7 +285,7 @@ class UserDao:
             self._logger.debug(f'succeeded to find user by id with id={id}, result=None')
             return None
         user_field = self._map_to_field(rows[0], field_type)
-        self._logger.debug(f'succeeded to find user by id, user_field={user_field}')
+        self._logger.debug(f'succeeded to find user by id with id={id}, user_field={user_field}')
         return user_field
 
     async def find_by_username(self, username: str, field_type: FieldType = FieldType.SIMPLE) -> Optional[UserField]:
@@ -304,7 +299,7 @@ class UserDao:
             User field object, returns None if not found
         """
         if self._db is None:
-            message = f'missing db, failed to find user by username with username={username}'
+            message = f'missing db with username={username}'
             self._logger.error(message)
             raise Error(DbErrc.MISSING_DB.value, message)
 
@@ -327,7 +322,7 @@ class UserDao:
             self._logger.debug(f'succeeded to find user by username with username={username}, result=None')
             return None
         user_field = self._map_to_field(rows[0], field_type)
-        self._logger.debug(f'succeeded to find user by username, user_field={user_field}')
+        self._logger.debug(f'succeeded to find user by username with username={username}, user_field={user_field}')
         return user_field
 
     async def find(
@@ -350,7 +345,7 @@ class UserDao:
             User field object list with pagination info
         """
         if self._db is None:
-            message = f'missing db, failed to find users with params={params}, page={page}, page_size={page_size}, field_type={field_type}'
+            message = f'missing db with params={params}, page={page}, page_size={page_size}, field_type={field_type}'
             self._logger.error(message)
             raise Error(DbErrc.MISSING_DB.value, message)
 

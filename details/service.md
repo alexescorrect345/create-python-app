@@ -187,7 +187,7 @@ class UserService:
         await self._user_dao.delete_by_id(id)
         self._logger.info(f'succeeded to delete user with id={id}')
 
-    async def find_by_id(self, id: int, field_type: FieldType = FieldType.SIMPLE) -> UserField | None:
+    async def find_by_id(self, id: int, field_type: FieldType = FieldType.SIMPLE) -> Optional[UserField]:
         """Find user by ID
 
         Args:
