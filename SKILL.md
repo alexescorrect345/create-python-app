@@ -221,7 +221,7 @@ class SuccessResponse:
 
     code: str = ''
     data: Any = field(default_factory=dict)
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3])
+    timestamp: int = field(default_factory=lambda: int(datetime.now(timezone.utc).timestamp() * 1000))
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary
@@ -245,7 +245,8 @@ class SuccessResponse:
 
     def __str__(self) -> str:
         """Return string representation"""
-        return f'SuccessResponse(code={self.code}, data={self.data}, timestamp={self.timestamp})'
+        ts = datetime.fromtimestamp(self.timestamp / 1000, tz=timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]
+        return f'SuccessResponse(code={self.code}, data={self.data}, timestamp={ts})'
 
 
 @dataclass
@@ -254,7 +255,7 @@ class ErrorResponse:
 
     code: str
     message: str
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3])
+    timestamp: int = field(default_factory=lambda: int(datetime.now(timezone.utc).timestamp() * 1000))
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary
@@ -278,7 +279,8 @@ class ErrorResponse:
 
     def __str__(self) -> str:
         """Return string representation"""
-        return f'ErrorResponse(code={self.code}, message={self.message}, timestamp={self.timestamp})'
+        ts = datetime.fromtimestamp(self.timestamp / 1000, tz=timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]
+        return f'ErrorResponse(code={self.code}, message={self.message}, timestamp={ts})'
 ```
 
 #### Pagination

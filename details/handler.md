@@ -39,14 +39,14 @@ Before executing any Service-related operations, you must check if the Service h
 
 ```python
 if self._user_service is None:
-    message = 'missing user_service'
+    message = f'missing user_service with <relevant_params>'
     self._logger.error(message)
     raise Error(CommonErrc.MISSING_SERVICE.value, message)
 ```
 
 **Notes**:
 - Consistent with the DAO Null Check pattern in the Service layer
-- Log format uses the `failed to find xxx` pattern
+- Log format uses the `missing <component> with <params>` pattern
 - Must use the common error code (e.g., `CommonErrc.MISSING_SERVICE`)
 
 #### Method Ordering
@@ -201,39 +201,31 @@ class UserHandler:
         Returns:
             HTTP response
         """
-        try:
-            # Parse request body (insert takes JSON body)
-            request_data = await request.json()
-            username = request_data.get("username")
-            password = request_data.get("password")
+        # Parse request body (insert takes JSON body)
+        request_data = await request.json()
+        username = request_data.get("username")
+        password = request_data.get("password")
 
-            # Build UserField object
-            user_field = UserField(username=username, password=password)
+        # Build UserField object
+        user_field = UserField(username=username, password=password)
 
-            # Service null check
-            if self._user_service is None:
-                message = 'missing user_service'
-                self._logger.error(message)
-                raise Error(CommonErrc.MISSING_SERVICE.value, message)
-
-            # Call service layer
-            id = await self._user_service.insert(user=user_field)
-
-            # Return success response
-            return web.json_response(
-                SuccessResponse(
-                    code='',
-                    data=id
-                ).to_dict(),
-                status=201
-            )
-        except Error as e:
-            # Business errors handled by error middleware
-            raise
-        except Exception as e:
-            message = f'failed to process request in insert with username={username}'
+        # Service null check
+        if self._user_service is None:
+            message = f'missing user_service with user_field={user_field}'
             self._logger.error(message)
-            raise Error(UserErrc.UNKNOWN_ERROR.value, message) from e
+            raise Error(CommonErrc.MISSING_SERVICE.value, message)
+
+        # Call service layer
+        id = await self._user_service.insert(user_field)
+
+        # Return success response
+        return web.json_response(
+            SuccessResponse(
+                code='',
+                data=id
+            ).to_dict(),
+            status=201
+        )
 
     async def update_by_id(self, request: web.Request):
         """Update user by ID (PUT /users/{id})
@@ -244,54 +236,45 @@ class UserHandler:
         Returns:
             HTTP response
         """
-        try:
-            # Parse path parameter
-            id = int(request.match_info["id"])
+        # Parse path parameter
+        id = int(request.match_info["id"])
 
-            # Parse request body (update takes JSON body)
-            request_data = await request.json()
-            username = request_data.get("username")
-            password = request_data.get("password")
+        # Parse request body (update takes JSON body)
+        request_data = await request.json()
+        username = request_data.get("username")
+        password = request_data.get("password")
 
-            # Empty string means no update for this field
-            if username == '':
-                username = None
-            if password == '':
-                password = None
+        # Empty string means no update for this field
+        if username == '':
+            username = None
+        if password == '':
+            password = None
 
-            # Build update params
-            update_params = {}
-            if username is not None:
-                update_params["username"] = username
-            if password is not None:
-                update_params["password"] = password
+        # Build update params
+        update_params = {}
+        if username is not None:
+            update_params["username"] = username
+        if password is not None:
+            update_params["password"] = password
 
-            # Service null check
-            if self._user_service is None:
-                message = 'missing user_service'
-                self._logger.error(message)
-                raise Error(CommonErrc.MISSING_SERVICE.value, message)
-
-            # Call service layer
-            user_field = await self._user_service.update_by_id(
-                id=id,
-                params=update_params
-            )
-
-            # Return success response
-            return web.json_response(
-                SuccessResponse(
-                    code='',
-                    data=user_field
-                ).to_dict()
-            )
-        except Error as e:
-            # Business errors handled by error middleware
-            raise
-        except Exception as e:
-            message = f'failed to process request in update_by_id with id={id}'
+        # Service null check
+        if self._user_service is None:
+            message = f'missing user_service with id={id}, params={update_params}'
             self._logger.error(message)
-            raise Error(UserErrc.UNKNOWN_ERROR.value, message) from e
+            raise Error(CommonErrc.MISSING_SERVICE.value, message)
+
+        # Call service layer
+        await self._user_service.update_by_id(
+            id=id,
+            params=update_params
+        )
+
+        return web.json_response(
+            SuccessResponse(
+                code='',
+                data={}
+            ).to_dict()
+        )
 
     async def delete_by_id(self, request: web.Request):
         """Delete user by ID (DELETE /users/{id})
@@ -302,33 +285,25 @@ class UserHandler:
         Returns:
             HTTP response
         """
-        try:
-            # Parse path parameter
-            id = int(request.match_info["id"])
+        # Parse path parameter
+        id = int(request.match_info["id"])
 
-            # Service null check
-            if self._user_service is None:
-                message = 'missing user_service'
-                self._logger.error(message)
-                raise Error(CommonErrc.MISSING_SERVICE.value, message)
-
-            # Call service layer
-            await self._user_service.delete_by_id(id=id)
-
-            # Return success response (empty data)
-            return web.json_response(
-                SuccessResponse(
-                    code='',
-                    data={}
-                ).to_dict()
-            )
-        except Error as e:
-            # Business errors handled by error middleware
-            raise
-        except Exception as e:
-            message = f'failed to process request in delete_by_id with id={id}'
+        # Service null check
+        if self._user_service is None:
+            message = f'missing user_service with id={id}'
             self._logger.error(message)
-            raise Error(UserErrc.UNKNOWN_ERROR.value, message) from e
+            raise Error(CommonErrc.MISSING_SERVICE.value, message)
+
+        # Call service layer
+        await self._user_service.delete_by_id(id=id)
+
+        # Return success response (empty data)
+        return web.json_response(
+            SuccessResponse(
+                code='',
+                data={}
+            ).to_dict()
+        )
 
     async def find_by_id(self, request: web.Request):
         """Find user by ID (GET /users/{id})
@@ -339,33 +314,25 @@ class UserHandler:
         Returns:
             HTTP response
         """
-        try:
-            # Parse path parameter
-            id = int(request.match_info["id"])
+        # Parse path parameter
+        id = int(request.match_info["id"])
 
-            # Service null check
-            if self._user_service is None:
-                message = 'missing user_service'
-                self._logger.error(message)
-                raise Error(CommonErrc.MISSING_SERVICE.value, message)
-
-            # Call service layer
-            user_field = await self._user_service.find_by_id(id=id)
-
-            # Return success response
-            return web.json_response(
-                SuccessResponse(
-                    code='',
-                    data=user_field
-                ).to_dict()
-            )
-        except Error as e:
-            # Business errors handled by error middleware
-            raise
-        except Exception as e:
-            message = f'failed to process request in find_by_id with id={id}'
+        # Service null check
+        if self._user_service is None:
+            message = f'missing user_service with id={id}'
             self._logger.error(message)
-            raise Error(UserErrc.UNKNOWN_ERROR.value, message) from e
+            raise Error(CommonErrc.MISSING_SERVICE.value, message)
+
+        # Call service layer
+        user_field = await self._user_service.find_by_id(id=id)
+
+        # Return success response
+        return web.json_response(
+            SuccessResponse(
+                code='',
+                data=user_field
+            ).to_dict()
+        )
 
     async def find(self, request: web.Request):
         """Find user list (GET /users)
@@ -376,58 +343,50 @@ class UserHandler:
         Returns:
             HTTP response
         """
-        try:
-            # Parse query parameters
-            username = request.query.get("username") or None
-            page_raw = request.query.get("page")
-            page_size_raw = request.query.get("page_size")
+        # Parse query parameters
+        username = request.query.get("username") or None
+        page = request.query.get("page")
+        page_size = request.query.get("page_size")
 
-            # Build query params
-            query_params = {"username": username} if username else {}
+        # Build query params
+        query_params = {"username": username} if username else {}
 
-            # Service null check
-            if self._user_service is None:
-                message = 'missing user_service'
-                self._logger.error(message)
-                raise Error(CommonErrc.MISSING_SERVICE.value, message)
-
-            # Call service layer
-            if page_raw is None and page_size_raw is None:
-                user_list, pagination = await self._user_service.find(params=query_params)
-            elif page_raw is None:
-                user_list, pagination = await self._user_service.find(
-                    params=query_params,
-                    page_size=max(1, int(page_size_raw))
-                )
-            elif page_size_raw is None:
-                user_list, pagination = await self._user_service.find(
-                    params=query_params,
-                    page=max(1, int(page_raw))
-                )
-            else:
-                user_list, pagination = await self._user_service.find(
-                    params=query_params,
-                    page=max(1, int(page_raw)),
-                    page_size=max(1, int(page_size_raw))
-                )
-
-            # Return success response
-            return web.json_response(
-                SuccessResponse(
-                    code='',
-                    data={
-                        "items": user_list,
-                        "pagination": pagination
-                    }
-                ).to_dict()
-            )
-        except Error as e:
-            # Business errors handled by error middleware
-            raise
-        except Exception as e:
-            message = f'failed to process request in find with params={query_params}'
+        # Service null check
+        if self._user_service is None:
+            message = f'missing user_service with params={query_params}'
             self._logger.error(message)
-            raise Error(UserErrc.UNKNOWN_ERROR.value, message) from e
+            raise Error(CommonErrc.MISSING_SERVICE.value, message)
+
+        # Call service layer
+        if page is None and page_size is None:
+            user_list, pagination = await self._user_service.find(params=query_params)
+        elif page is None:
+            user_list, pagination = await self._user_service.find(
+                params=query_params,
+                page_size=max(1, int(page_size))
+            )
+        elif page_size is None:
+            user_list, pagination = await self._user_service.find(
+                params=query_params,
+                page=max(1, int(page))
+            )
+        else:
+            user_list, pagination = await self._user_service.find(
+                params=query_params,
+                page=max(1, int(page)),
+                page_size=max(1, int(page_size))
+            )
+
+        # Return success response
+        return web.json_response(
+            SuccessResponse(
+                code='',
+                data={
+                    "items": user_list,
+                    "pagination": pagination
+                }
+            ).to_dict()
+        )
 
     # Route registration example
     def register_routes(self, app: web.Application):

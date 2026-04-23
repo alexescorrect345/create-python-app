@@ -218,10 +218,10 @@ class UserDao:
         updates = []
         sql_params = []
 
-        if 'username' in params:
+        if "username" in params:
             updates.append('username = ?')
             sql_params.append(params["username"])
-        if 'password' in params:
+        if "password" in params:
             updates.append('password = ?')
             sql_params.append(params["password"])
 
@@ -350,7 +350,7 @@ class UserDao:
             raise Error(DbErrc.MISSING_DB.value, message)
 
         offset = (page - 1) * page_size
-        username = params.get('username')
+        username = params.get("username")
 
         where_clause = 'WHERE username = ?' if username else ''
 
