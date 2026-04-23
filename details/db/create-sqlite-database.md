@@ -116,7 +116,7 @@ class SqliteDB(DB):
         Raises:
             Error: Close failed with DbErrc.FAILED_TO_DISCONNECT
         """
-        if self._connection is not None:
+        if self.is_connected:
             try:
                 await self._connection.commit()
                 self._logger.info(f'succeeded to commit pending transactions before closing with db_path={self._config["db_path"]}')
@@ -164,7 +164,7 @@ class SqliteDB(DB):
             self._logger.error(message)
             raise Error(DbErrc.MISSING_SCRIPT.value, message)
 
-        if self._connection is None:
+        if not self.is_connected:
             message = f'did not connect to database with db_path={self._config["db_path"]}'
             self._logger.error(message)
             raise Error(DbErrc.NOT_CONNECTED.value, message)
@@ -254,7 +254,7 @@ class SqliteDB(DB):
             self._logger.error(message)
             raise Error(DbErrc.MISSING_SCRIPT.value, message)
 
-        if self._connection is None:
+        if not self.is_connected:
             message = f'did not connect to database with db_path={self._config["db_path"]}'
             self._logger.error(message)
             raise Error(DbErrc.NOT_CONNECTED.value, message)
