@@ -98,14 +98,14 @@ class UserService:
     """User Service"""
     _logger = logging.getLogger(__name__)
 
-    def __init__(self, config: dict):
+    def __init__(self, config: dict[str, Any]):
         """Initialize
 
         Args:
             config: Configuration dictionary
         """
         self._config = config
-        self._user_dao = None
+        self._user_dao: Optional[UserDao] = None
 
     def set_user_dao(self, user_dao: UserDao):
         """Set user data access object
@@ -143,7 +143,7 @@ class UserService:
         # Return user ID
         return id
 
-    async def update_by_id(self, id: int, params: dict) -> None:
+    async def update_by_id(self, id: int, params: dict[str, Any]) -> None:
         """Update user by ID
 
         Args:
@@ -207,7 +207,7 @@ class UserService:
 
     async def find(
         self,
-        params: dict,
+        params: dict[str, Any],
         page: int = 1,
         page_size: int = sys.maxsize,
         field_type: FieldType = FieldType.SIMPLE

@@ -1043,13 +1043,15 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
+from app.common import Error
+
 
 class Task(ABC):
     """Background task base class"""
 
     _logger = logging.getLogger(__name__)
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any]) -> None:
         """Initialize
 
         Args:
@@ -1059,26 +1061,30 @@ class Task(ABC):
         self._running = False
 
     @abstractmethod
-    async def _run_once(self):
+    async def _run_once(self) -> None:
         """Execute task once"""
         pass
 
-    async def run_in_loop(self):
+    async def run_in_loop(self) -> None:
         """Run task in loop"""
         self._running = True
         while self._running:
             try:
                 await self._run_once()
+            except Error as e:
+                self._logger.error(f'failed to run task loop with code={e.code}, message={e.message}')
+                self._logger.exception(e)
+                self._running = False
             except Exception as e:
                 self._logger.error('failed to run task loop')
                 self._logger.exception(e)
+                self._running = False
 
-    async def close(self):
+    async def close(self) -> None:
         """Close task"""
         self._running = False
         self._logger.info('task closed')
 
-    @property
     def is_running(self) -> bool:
         """Whether task is running"""
         return self._running

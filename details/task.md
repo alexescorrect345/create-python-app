@@ -122,7 +122,7 @@ class UserTask(Task):
         super().__init__(config=config)
         self._user_service = None
 
-    def set_user_service(self, service: UserService):
+    def set_user_service(self, service: UserService) -> None:
         """Set user service
 
         Args:
@@ -130,15 +130,15 @@ class UserTask(Task):
         """
         self._user_service = service
 
-    async def _run_once(self):
+    async def _run_once(self) -> None:
         """Execute task once (example: clean up expired users)"""
-        try:
-            # Service null check
-            if self._user_service is None:
-                message = f'failed to find user_service in UserTask'
-                self._logger.error(message)
-                raise Error(CommonErrc.MISSING_SERVICE.value, message)
+        # Service null check
+        if self._user_service is None:
+            message = f'failed to find user_service in UserTask'
+            self._logger.error(message)
+            raise Error(CommonErrc.MISSING_SERVICE.value, message)
 
+        try:
             # Get all users
             users = await self._user_service.find()
             self._logger.info(f'succeeded to check {len(users)} users in UserTask')
@@ -149,12 +149,16 @@ class UserTask(Task):
                 self._logger.debug(f'checking user with username={user.username} in UserTask')
 
             self._logger.info(f'succeeded to execute task once in UserTask with checked_count={len(users)}')
+        except Error as e:
+            message = f'failed to execute task once in UserTask with code={e.code}, message={e.message}'
+            self._logger.error(message)
+            self._logger.exception(e)
         except Exception as e:
             message = f'failed to execute task once in UserTask with config={self._config}'
             self._logger.error(message)
             self._logger.exception(e)
         finally:
             # Sleep regardless of success or failure
-            interval_s = self._config.get("task_interval_s", 60)
+            interval_s = self._config["task_interval_s"]
             await asyncio.sleep(interval_s)
 ```

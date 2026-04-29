@@ -164,6 +164,7 @@ user_handler.register_routes(app)
 
 ```python
 import logging
+from typing import Any
 
 from aiohttp import web
 
@@ -175,7 +176,7 @@ class UserHandler:
     _logger = logging.getLogger(__name__)
     """User Handler"""
 
-    def __init__(self, config: dict):
+    def __init__(self, config: dict[str, Any]):
         """Initialize
 
         Args:
