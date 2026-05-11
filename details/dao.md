@@ -288,46 +288,9 @@ class UserDao:
         self._logger.debug(f'succeeded to find user by id with id={id}, user_field={user_field}')
         return user_field
 
-    async def find_by_username(self, username: str, field_type: FieldType = FieldType.SIMPLE) -> Optional[UserField]:
-        """Find user by username
-
-        Args:
-            username: Username
-            field_type: Query type (FieldType.SIMPLE or FieldType.FULL)
-
-        Returns:
-            User field object, returns None if not found
-        """
-        if self._db is None:
-            message = f'missing db with username={username}'
-            self._logger.error(message)
-            raise Error(DbErrc.MISSING_DB.value, message)
-
-        if field_type == FieldType.FULL:
-            script = f'''
-            SELECT u.id, u.username, u.password, r.id, r.name
-            FROM {self._TABLE_NAME} u
-            LEFT JOIN t_role r ON u.role_id = r.id
-            WHERE u.username = ?
-            '''
-        else:
-            script = f'''
-            SELECT id, username, password
-            FROM {self._TABLE_NAME}
-            WHERE username = ?
-            '''
-
-        rows = await self._db.exec(script, (username,))
-        if not rows:
-            self._logger.debug(f'succeeded to find user by username with username={username}, result=None')
-            return None
-        user_field = self._map_to_field(rows[0], field_type)
-        self._logger.debug(f'succeeded to find user by username with username={username}, user_field={user_field}')
-        return user_field
-
     async def find(
         self,
-        params: dict[str, Any],
+        params: Optional[dict[str, Any]] = None,
         page: int = 1,
         page_size: int = sys.maxsize,
         field_type: FieldType = FieldType.SIMPLE
@@ -337,6 +300,7 @@ class UserDao:
         Args:
             params: Query parameter dictionary, supported keys:
                 - username: Username (optional)
+                - password: Password (optional)
             page: Page number (starting from 1)
             page_size: Number of items per page
             field_type: Query type (FieldType.SIMPLE or FieldType.FULL)
@@ -344,6 +308,7 @@ class UserDao:
         Returns:
             User field object list with pagination info
         """
+        params = params or {}
         if self._db is None:
             message = f'missing db with params={params}, page={page}, page_size={page_size}, field_type={field_type}'
             self._logger.error(message)
@@ -351,11 +316,22 @@ class UserDao:
 
         offset = (page - 1) * page_size
         username = params.get("username")
+        password = params.get("password")
 
-        where_clause = 'WHERE username = ?' if username else ''
+        conditions = []
+        values = []
+        if username:
+            conditions.append('username = ?')
+            values.append(username)
+        if password:
+            conditions.append('password = ?')
+            values.append(password)
+
+        where_clause = ('WHERE ' + ' AND '.join(conditions)) if conditions else ''
 
         if field_type == FieldType.FULL:
-            full_where = 'WHERE u.username = ?' if username else ''
+            full_conditions = [c.replace('username', 'u.username').replace('password', 'u.password') for c in conditions]
+            full_where = ('WHERE ' + ' AND '.join(full_conditions)) if full_conditions else ''
             sql = f'''
             SELECT u.id, u.username, u.password, r.id, r.name
             FROM {self._TABLE_NAME} u
@@ -375,12 +351,9 @@ class UserDao:
             '''
             count_sql = f'SELECT COUNT(*) FROM {self._TABLE_NAME} {where_clause}'
 
-        if username:
-            rows = await self._db.exec(sql, (username, page_size, offset))
-            count_rows = await self._db.exec(count_sql, (username,))
-        else:
-            rows = await self._db.exec(sql, (page_size, offset))
-            count_rows = await self._db.exec(count_sql)
+        params = (*values, page_size, offset)
+        rows = await self._db.exec(sql, params)
+        count_rows = await self._db.exec(count_sql, values if values else None)
 
         total = count_rows[0][0] if count_rows else 0
         total_pages = (total + page_size - 1) // page_size if total > 0 else 0

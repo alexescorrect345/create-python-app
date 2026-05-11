@@ -163,12 +163,13 @@ user_handler.register_routes(app)
 ### Complete UserHandler Template
 
 ```python
+import json
 import logging
 from typing import Any
 
 from aiohttp import web
 
-from app.common import Error, SuccessResponse, ErrorResponse, Pagination
+from app.common import Errc as CommonErrc, Error, SuccessResponse, ErrorResponse, Pagination
 from app.feature.user import UserField, UserService
 from app.feature.user.common import Errc as UserErrc
 
@@ -185,7 +186,7 @@ class UserHandler:
         self._config = config
         self._user_service = None
 
-    def set_user_service(self, service: UserService):
+    def set_user_service(self, service: UserService) -> None:
         """Set user service
 
         Args:
@@ -193,7 +194,7 @@ class UserHandler:
         """
         self._user_service = service
 
-    async def insert(self, request: web.Request):
+    async def insert(self, request: web.Request) -> web.Response:
         """Insert user (POST /users)
 
         Args:
@@ -202,24 +203,26 @@ class UserHandler:
         Returns:
             HTTP response
         """
-        # Parse request body (insert takes JSON body)
-        request_data = await request.json()
+        try:
+            request_data = await request.json()
+        except Exception as e:
+            text = await request.text()
+            message = f'failed to parse json body with text={text}'
+            self._logger.error(message)
+            raise Error(CommonErrc.INVALID_JSON.value, message) from e
+
         username = request_data.get("username")
         password = request_data.get("password")
 
-        # Build UserField object
         user_field = UserField(username=username, password=password)
 
-        # Service null check
         if self._user_service is None:
             message = f'missing user_service with user_field={user_field}'
             self._logger.error(message)
             raise Error(CommonErrc.MISSING_SERVICE.value, message)
 
-        # Call service layer
         id = await self._user_service.insert(user_field)
 
-        # Return success response
         return web.json_response(
             SuccessResponse(
                 code='',
@@ -228,7 +231,7 @@ class UserHandler:
             status=201
         )
 
-    async def update_by_id(self, request: web.Request):
+    async def update_by_id(self, request: web.Request) -> web.Response:
         """Update user by ID (PUT /users/{id})
 
         Args:
@@ -237,34 +240,35 @@ class UserHandler:
         Returns:
             HTTP response
         """
-        # Parse path parameter
         id = int(request.match_info["id"])
 
-        # Parse request body (update takes JSON body)
-        request_data = await request.json()
+        try:
+            request_data = await request.json()
+        except Exception as e:
+            text = await request.text()
+            message = f'failed to parse json body with text={text}'
+            self._logger.error(message)
+            raise Error(CommonErrc.INVALID_JSON.value, message) from e
+
         username = request_data.get("username")
         password = request_data.get("password")
 
-        # Empty string means no update for this field
         if username == '':
             username = None
         if password == '':
             password = None
 
-        # Build update params
         update_params = {}
         if username is not None:
             update_params["username"] = username
         if password is not None:
             update_params["password"] = password
 
-        # Service null check
         if self._user_service is None:
             message = f'missing user_service with id={id}, params={update_params}'
             self._logger.error(message)
             raise Error(CommonErrc.MISSING_SERVICE.value, message)
 
-        # Call service layer
         await self._user_service.update_by_id(
             id=id,
             params=update_params
@@ -277,7 +281,7 @@ class UserHandler:
             ).to_dict()
         )
 
-    async def delete_by_id(self, request: web.Request):
+    async def delete_by_id(self, request: web.Request) -> web.Response:
         """Delete user by ID (DELETE /users/{id})
 
         Args:
@@ -306,7 +310,7 @@ class UserHandler:
             ).to_dict()
         )
 
-    async def find_by_id(self, request: web.Request):
+    async def find_by_id(self, request: web.Request) -> web.Response:
         """Find user by ID (GET /users/{id})
 
         Args:
@@ -335,7 +339,7 @@ class UserHandler:
             ).to_dict()
         )
 
-    async def find(self, request: web.Request):
+    async def find(self, request: web.Request) -> web.Response:
         """Find user list (GET /users)
 
         Args:
@@ -390,7 +394,7 @@ class UserHandler:
         )
 
     # Route registration example
-    def register_routes(self, app: web.Application):
+    def register_routes(self, app: web.Application) -> None:
         """Register routes
 
         Args:
