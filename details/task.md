@@ -108,7 +108,6 @@ from app.common import Error, Errc as CommonErrc
 from app.task import Task
 from app.feature.user import UserService
 
-
 class UserTask(Task):
     """User background task"""
     _logger = logging.getLogger(__name__)
@@ -134,21 +133,21 @@ class UserTask(Task):
         """Execute task once (example: clean up expired users)"""
         # Service null check
         if self._user_service is None:
-            message = f'failed to find user_service in UserTask'
+            message = f'failed to find user_service in UserTask with config={self._config}'
             self._logger.error(message)
             raise Error(CommonErrc.MISSING_SERVICE.value, message)
 
         try:
             # Get all users
-            users = await self._user_service.find()
-            self._logger.info(f'succeeded to check {len(users)} users in UserTask')
+            user_list = await self._user_service.find()
+            self._logger.info(f'succeeded to check {len(user_list)} users in UserTask')
 
             # Cleanup logic (example)
-            for user in users:
+            for user in user_list:
                 # Example: check user status
                 self._logger.debug(f'checking user with username={user.username} in UserTask')
 
-            self._logger.info(f'succeeded to execute task once in UserTask with checked_count={len(users)}')
+            self._logger.info(f'succeeded to execute task once in UserTask with checked_count={len(user_list)}')
         except Error as e:
             message = f'failed to execute task once in UserTask with code={e.code}, message={e.message}'
             self._logger.error(message)

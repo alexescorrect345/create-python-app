@@ -11,11 +11,55 @@
 3. **Type Definition**: Clearly defines type and default value for each field
 4. **Serialization Support**: Provides `to_dict()` / `from_dict()` methods for dictionary conversion
 
-### Complete UserField Template
+### Complete Field Template
 
 ```python
-from typing import Optional
+from typing import Any, Optional
 from dataclasses import dataclass
+
+@dataclass
+class RoleField:
+    """Role field object
+
+    Attributes:
+        id: Role ID
+        name: Role name
+    """
+    id: Optional[int] = None
+    name: str = ''
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary
+
+        Returns:
+            Dictionary representation
+        """
+        return {
+            "id": self.id,
+            "name": self.name
+        }
+
+    @classmethod
+    def from_dict(cls, role_dict: dict) -> Optional['RoleField']:
+        """Create object from dictionary
+
+        Args:
+            role_dict: Dictionary data
+
+        Returns:
+            RoleField object
+        """
+        if role_dict is None:
+            return None
+        return cls(**role_dict)
+
+    def __str__(self):
+        """Convert to string
+
+        Returns:
+            Human-readable string representation
+        """
+        return f'RoleField(id={self.id}, name={self.name})'
 
 
 @dataclass
@@ -24,24 +68,32 @@ class UserField:
 
     Attributes:
         id: User ID, None means not saved to database
+        role_id: Role ID
         username: Username
         password: Password
+        role: Role object (optional, for FULL query mode)
     """
     id: Optional[int] = None
+    role_id: int = 0
     username: str = ''
     password: str = ''
+    role: Optional[RoleField] = None
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary
 
         Returns:
-            Dictionary representation
+            Dictionary representation, converts role to dict when present
         """
-        return {
+        result = {
             "id": self.id,
+            "role_id": self.role_id,
             "username": self.username,
             "password": self.password
         }
+        if self.role:
+            result["role"] = self.role.to_dict()
+        return result
 
     @classmethod
     def from_dict(cls, user_dict: dict) -> Optional['UserField']:
@@ -55,6 +107,8 @@ class UserField:
         """
         if user_dict is None:
             return None
+        if "role" in user_dict and user_dict["role"] is not None:
+            user_dict["role"] = RoleField.from_dict(user_dict["role"])
         return cls(**user_dict)
 
     def __str__(self):
@@ -63,34 +117,5 @@ class UserField:
         Returns:
             Human-readable string representation
         """
-        return f'UserField(id={self.id}, username={self.username})'
-```
-
-### Field Initialization Example
-
-```python
-from app.feature.user.field import UserField
-
-# Create new User (not saved to database)
-new_user = UserField(
-    username="test_user",
-    password="hashed_password"
-)
-
-# Create saved User
-saved_user = UserField(
-    id=1,
-    username="test_user",
-    password="hashed_password"
-)
-
-# Convert to dictionary
-user_dict = saved_user.to_dict()
-
-# Create object from dictionary
-user = UserField.from_dict(user_dict)
-
-# Print object string
-print(saved_user)
-# Output: UserField(id=1, username=test_user)
+        return f'UserField(id={self.id}, role_id={self.role_id}, username={self.username}, password={self.password}, role={self.role})'
 ```

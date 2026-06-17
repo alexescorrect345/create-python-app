@@ -79,8 +79,6 @@ class SqliteDB(DB):
                 if db_path_obj.parent and str(db_path_obj.parent) != '.':
                     await aiofiles.os.makedirs(str(db_path_obj.parent), exist_ok=True)
                     self._logger.info(f'succeeded to create directory for database with db_path={db_path}')
-        except Error:
-            raise
         except Exception as e:
             message = f'failed to create directory for database with db_path={db_path}'
             self._logger.error(message)
@@ -96,8 +94,6 @@ class SqliteDB(DB):
 
             self._logger.info(f'succeeded to connect to sqlite database with db_path={db_path}')
 
-        except Error:
-            raise
         except Exception as e:
             self._connection = None
             message = f'failed to connect to sqlite database with db_path={db_path}'
@@ -182,8 +178,6 @@ class SqliteDB(DB):
 
             return result
 
-        except Error:
-            raise
         except Exception as e:
             if self._config.get("isolation_level") is not None:
                 try:
@@ -263,8 +257,6 @@ class SqliteDB(DB):
 
             return result_list
 
-        except Error:
-            raise
         except Exception as e:
             if self._config.get("isolation_level") is not None:
                 try:

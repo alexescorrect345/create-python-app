@@ -185,6 +185,7 @@ class Errc(Enum):
     MISSING_DAO = 'myapp::common::014'
     MISSING_API = 'myapp::common::015'
     MISSING_FIELD = 'myapp::common::016'
+    INVALID_FIELD_TYPE = 'myapp::common::017'
 ```
 
 #### Shared Classes
@@ -966,15 +967,15 @@ class DB(ABC):
         self,
         script: str,
         params: Optional[Tuple[Any, ...]] = None
-    ) -> Optional[List[Tuple[Any, ...]]]:
-        """Execute SQL script
+    ) -> Any:
+        """Execute script
 
         Args:
-            script: SQL script
-            params: Parameter tuple
+            script: Script to execute
+            params: Parameter tuple (semantics are backend-specific)
 
         Returns:
-            Query result list or None
+            Execution result, or None if no return value
         """
         pass
 
@@ -983,15 +984,15 @@ class DB(ABC):
         self,
         scripts: List[str],
         params_list: List[Optional[Tuple[Any, ...]]] = []
-    ) -> List[List[Tuple[Any, ...]]]:
-        """Batch execute SQL scripts
+    ) -> List[Any]:
+        """Batch execute scripts
 
         Args:
-            scripts: SQL script list
+            scripts: Script list to execute
             params_list: Parameter tuple list, default empty list
 
         Returns:
-            Query result list (only query scripts), or empty list if no query scripts
+            Execution result list, one entry per script (in order)
         """
         pass
 ```
@@ -1024,13 +1025,27 @@ class Errc(Enum):
     # Execution errors
     MISSING_SCRIPT = 'myapp::db::006'
     FAILED_TO_EXEC = 'myapp::db::007'
+    FAILED_TO_FIND_INSERTED_ID = 'myapp::db::008'
+
+    # DolphinDB connection configuration errors
+    MISSING_HOST = 'myapp::db::009'
+    MISSING_PORT = 'myapp::db::010'
+    MISSING_USERID = 'myapp::db::011'
+    MISSING_PASSWORD = 'myapp::db::012'
+
+    # DAO errors
+    MISSING_DB = 'myapp::db::013'
+    INVALID_VALUE_TYPE = 'myapp::db::014'
+    INVALID_ORDER = 'myapp::db::015'
 ```
 
 #### 9.4 Create `app/db/{Name}DB.py` (Optional)
 
 Only execute this step if the user selected a database in Step 1 (user chose SQLite/DolphinDB).
 
-Based on the database type selected by the user, create the corresponding database implementation class (e.g., `SqliteDB.py`) following the steps in `details/db/create-sqlite-database.md`.
+Based on the database type selected by the user, create the corresponding database implementation class following the steps in the matching doc:
+- **SQLite**: `details/db/create-sqlite-database.md` → `SqliteDB.py`
+- **DolphinDB**: `details/db/create-dolphindb-database.md` → `DolphinDB.py`
 
 ### Step 10: Create Background Task Base Class
 
