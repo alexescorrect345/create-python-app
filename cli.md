@@ -38,7 +38,7 @@ project/
 │   │   │   ├── dao.py              # Feature-specific DAO classes
 │   │   │   ├── service.py          # Feature-specific Service classes
 │   │   │   ├── task.py (optional)  # Feature-specific scheduled task classes
-│   │   │   └── __init__.py         # Package initialization, exports all API client classes
+│   │   │   └── __init__.py         # Package initialization, exports all feature classes
 │   ├── main.py                     # Application entry point
 │   ├── task.py                     # Application-level scheduled tasks
 │   └── __init__.py                 # Package initialization
@@ -53,6 +53,10 @@ project/
 ├── poetry.lock                     # Poetry dependency lock file (auto-generated)
 └── poetry.toml                     # Poetry global configuration
 ```
+
+### Step 3: Create poetry.toml and pyproject.toml (CLI)
+
+> This step is shared between CLI and Web. See `SKILL.md` Step 3 for details. The only CLI-specific difference is the `description` field in `pyproject.toml` should be `"A Python CLI program"`.
 
 ### Step 4: Configuration Files (CLI)
 
@@ -94,7 +98,7 @@ timeout_s = 30.0  # Database operation timeout (seconds)
 
 > Note: `Errc` enum is shared between CLI and Web. See `SKILL.md` Step 5 for the full definition.
 
-### Step 10: app/main.py (CLI)
+### Step 11: app/main.py (CLI)
 
 Create `app/main.py` with the following content:
 
@@ -136,9 +140,9 @@ async def main():
 
         # Optional: Database initialization (only if user chose a database in Step 1)
         # db_config = {
-        #     "path": config["service"]["db"]["path"],
+        #     "path": config["service"]["db"]["sqlitedb"]["path"],
         #     "check_same_thread": True,
-        #     "timeout": config["service"]["db"]["timeout_s"],
+        #     "timeout": config["service"]["db"]["sqlitedb"]["timeout_s"],
         #     "isolation_level": None
         # }
         # sqlite_db = SqliteDB(config=db_config)
@@ -147,12 +151,10 @@ async def main():
         logger.info(f'succeeded to start application with env={env}')
 
     except Error as e:
-        logger.error(f'failed to handle business error with code={e.code}, message={e.message}')
-        logger.exception(e)
+        logger.exception(f'failed to handle business error with code={e.code}, message={e.message}')
 
     except Exception as e:
-        logger.error(f'failed to run application with env={env}')
-        logger.exception(e)
+        logger.exception(f'failed to run application with env={env}')
 
 
 if __name__ == '__main__':

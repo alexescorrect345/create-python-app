@@ -82,7 +82,7 @@ class DolphinDB(DB):
             )
             return f'"{escaped_value}"'
 
-        message = f'unsupported dolphindb literal type with value_type={type(value).__name__}, value={value}'
+        message = f'invalid value_type with type={type(value).__name__}, value={value}'
         cls._logger.error(message)
         raise Error(DbErrc.INVALID_VALUE_TYPE.value, message)
 

@@ -83,9 +83,10 @@ Where `{name}` comes from the `{name}Api.py` filename.
 All InternalApi subclasses inherit from `app.api.api.InternalApi` base class. Subclasses only need to implement business methods by calling `self._get()`, `self._post()`, `self._put()`, `self._delete()`.
 
 ```python
-"""User API Client - Calls internal user APIs"""
+from typing import Any, Dict, Optional
+
+from app.common import SuccessResponse
 from app.api.api import InternalApi
-from app.api.response import SuccessResponse
 
 
 class UserApi(InternalApi):
@@ -96,16 +97,16 @@ class UserApi(InternalApi):
 
     async def insert_user(
         self,
+        role_id: int,
         username: str,
-        password: str,
-        email: str = ""
+        password: str
     ) -> SuccessResponse:
         """Insert a user
 
         Args:
+            role_id: Role ID
             username: Username
             password: Password
-            email: Email (optional)
 
         Returns:
             SuccessResponse object (caller accesses .data["id"] for the created user ID)
@@ -114,9 +115,9 @@ class UserApi(InternalApi):
             Error: API request failed
         """
         return await self._post('/users', {
+            "role_id": role_id,
             "username": username,
-            "password": password,
-            "email": email
+            "password": password
         })
 
     async def update_user_by_id(self, id: int, params: Dict[str, Any]) -> SuccessResponse:
@@ -145,11 +146,12 @@ class UserApi(InternalApi):
         """
         await self._delete(f'/users/{id}')
 
-    async def find_user_by_id(self, id: int) -> SuccessResponse:
+    async def find_user_by_id(self, id: int, field_type: str = 'simple') -> SuccessResponse:
         """Find user by ID
 
         Args:
             id: User ID
+            field_type: Query type, 'simple' (default) or 'full'
 
         Returns:
             SuccessResponse object (caller accesses .data for user info)
@@ -157,18 +159,26 @@ class UserApi(InternalApi):
         Raises:
             Error: API request failed
         """
-        return await self._get(f'/users/{id}')
+        return await self._get(f'/users/{id}', params={"field_type": field_type})
 
     async def find_user(
         self,
-        params: Dict[str, Any]
+        params: Dict[str, Any],
+        orderby: Optional[str] = None,
+        field_type: Optional[str] = None,
+        page: Optional[int] = None,
+        page_size: Optional[int] = None
     ) -> SuccessResponse:
         """Find user list
 
         Args:
-            params: Query params
-                - username: Username (optional)
-                - status: User status (optional)
+            params: Query filters
+                - role_id: Filter by role ID (optional)
+                - username: Filter by username (optional)
+            orderby: Order spec, e.g. 'id:desc,username:asc' (optional)
+            field_type: 'simple' (default) or 'full' (optional)
+            page: Page number starting from 1 (optional)
+            page_size: Items per page (optional)
 
         Returns:
             SuccessResponse object (caller accesses .data for user list)
@@ -176,7 +186,16 @@ class UserApi(InternalApi):
         Raises:
             Error: API request failed
         """
-        return await self._get('/users', params=params)
+        query = dict(params)
+        if orderby is not None:
+            query["orderby"] = orderby
+        if field_type is not None:
+            query["field_type"] = field_type
+        if page is not None:
+            query["page"] = page
+        if page_size is not None:
+            query["page_size"] = page_size
+        return await self._get('/users', params=query)
 ```
 
 ### Complete Derived ExternalApi Template
@@ -184,8 +203,7 @@ class UserApi(InternalApi):
 All ExternalApi subclasses inherit from `app.api.api.ExternalApi` base class. Subclasses only need to implement business methods by calling `self._get()`, `self._post()`, `self._put()`, `self._delete()`.
 
 ```python
-"""MyExternal API Client - Calls third-party APIs"""
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict
 
 from app.api.api import ExternalApi
 

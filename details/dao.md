@@ -38,12 +38,12 @@ Skip methods that are not needed by the selected database. For example, `upsert`
 
 ```python
 # ✅ Correct: Use single quotes for database scripts
-sql = f'SELECT id, username, password FROM {self._TABLE_NAME} WHERE id = ?'
-sql = f'INSERT INTO {self._TABLE_NAME} (username, password) VALUES (?, ?)'
+script = f'SELECT id, username, password FROM {self._TABLE_NAME} WHERE id = ?'
+script = f'INSERT INTO {self._TABLE_NAME} (username, password) VALUES (?, ?)'
 updates.append('username = ?')
 
 # ✅ Correct: Use three single quotes for multi-line database scripts
-sql = f'''
+script = f'''
 CREATE TABLE IF NOT EXISTS {self._TABLE_NAME} (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
@@ -52,12 +52,12 @@ CREATE TABLE IF NOT EXISTS {self._TABLE_NAME} (
 '''
 
 # ✅ Correct: Use double quotes when the script itself contains single quotes
-sql = f"SELECT * FROM {self._TABLE_NAME} WHERE username = '{username}'"
+script = f"SELECT * FROM {self._TABLE_NAME} WHERE username = '{username}'"
 
 # ❌ Wrong: Use double quotes for a normal script string
-sql = f"SELECT id, username, password FROM {self._TABLE_NAME} WHERE id = ?"
+script = f"SELECT id, username, password FROM {self._TABLE_NAME} WHERE id = ?"
 # ❌ Wrong: Use three double quotes for a multi-line script
-sql = f"""
+script = f"""
 CREATE TABLE IF NOT EXISTS {self._TABLE_NAME} (
     id INTEGER PRIMARY KEY AUTOINCREMENT
 )
@@ -73,12 +73,12 @@ The examples above use SQL-style scripts for illustration. When using `DolphinDB
 
 ```python
 # ✅ Correct: Use variable name matching the database field
-sql = f'SELECT id, username, password FROM {self._TABLE_NAME} WHERE id = ?'
-rows = await self._db.exec(sql, (id,))
+script = f'SELECT id, username, password FROM {self._TABLE_NAME} WHERE id = ?'
+rows = await self._db.exec(script=script, params=(id,))
 
 # ❌ Wrong: Use user_id instead of id
-sql = f'SELECT id, username, password FROM {self._TABLE_NAME} WHERE id = ?'
-rows = await self._db.exec(sql, (user_id,))  # Should use id
+script = f'SELECT id, username, password FROM {self._TABLE_NAME} WHERE id = ?'
+rows = await self._db.exec(script=script, params=(user_id,))  # Should use id
 ```
 
 The naming rule above applies to all supported databases. The code snippet is SQL-style only; when using `DolphinDB`, keep the same field names but use DolphinDB query scripts or DB helpers instead of SQLite-style parameter placeholders.
@@ -230,24 +230,24 @@ class UserDao:
             raise Error(DbErrc.MISSING_DB.value, message)
 
         updates = []
-        sql_params = []
+        script_params = []
 
         if "username" in params:
             updates.append('username = ?')
-            sql_params.append(params["username"])
+            script_params.append(params["username"])
         if "password" in params:
             updates.append('password = ?')
-            sql_params.append(params["password"])
+            script_params.append(params["password"])
         if "role_id" in params:
             updates.append('role_id = ?')
-            sql_params.append(params["role_id"])
+            script_params.append(params["role_id"])
 
         if not updates:
             return
 
-        sql_params.append(id)
-        sql = f'UPDATE {self._TABLE_NAME} SET {", ".join(updates)} WHERE id = ?'
-        await self._db.exec(sql, tuple(sql_params))
+        script_params.append(id)
+        script = f'UPDATE {self._TABLE_NAME} SET {", ".join(updates)} WHERE id = ?'
+        await self._db.exec(script=script, params=tuple(script_params))
         self._logger.debug(f'succeeded to update user with id={id}, params={params}')
 
     async def delete_by_id(self, id: Any) -> None:
@@ -264,8 +264,8 @@ class UserDao:
             self._logger.error(message)
             raise Error(DbErrc.MISSING_DB.value, message)
 
-        sql = f'DELETE FROM {self._TABLE_NAME} WHERE id = ?'
-        await self._db.exec(sql, (id,))
+        script = f'DELETE FROM {self._TABLE_NAME} WHERE id = ?'
+        await self._db.exec(script=script, params=(id,))
         self._logger.debug(f'succeeded to delete user with id={id}')
 
     async def find_by_id(self, id: Any, field_type: FieldType = FieldType.SIMPLE) -> Optional[UserField]:
@@ -297,7 +297,7 @@ class UserDao:
             WHERE id = ?
             '''
 
-        rows = await self._db.exec(script, (id,))
+        rows = await self._db.exec(script=script, params=(id,))
         if not rows:
             self._logger.debug(f'succeeded to find user by id with id={id}, result=None')
             return None
@@ -359,13 +359,13 @@ class UserDao:
             if direction not in ('asc', 'desc'):
                 message = f'invalid order direction with field={field}, direction={direction}'
                 self._logger.error(message)
-                raise Error(DbErrc.INVALID_ORDER.value, message)
+                raise Error(DbErrc.INVALID_ORDERBY.value, message)
             order_parts.append(f'u.{field} {direction.upper()}')
 
         order_clause = 'ORDER BY ' + ', '.join(order_parts)
 
         if field_type == FieldType.FULL:
-            sql = f'''
+            script = f'''
             SELECT u.id, u.username, u.password, u.role_id, r.id, r.name
             FROM {self._TABLE_NAME} u
             LEFT JOIN t_role r ON u.role_id = r.id
@@ -374,7 +374,7 @@ class UserDao:
             LIMIT ? OFFSET ?
             '''
         else:
-            sql = f'''
+            script = f'''
             SELECT id, username, password, role_id
             FROM {self._TABLE_NAME} u
             {where_clause}
@@ -382,14 +382,14 @@ class UserDao:
             LIMIT ? OFFSET ?
             '''
 
-        count_sql = f'SELECT COUNT(*) FROM {self._TABLE_NAME} u {where_clause}'
+        count_script = f'SELECT COUNT(*) FROM {self._TABLE_NAME} u {where_clause}'
 
         values.extend([page_size, offset])
         # exclude pagination params (page_size, offset) for count query
         count_values = values[:-2]
 
         rows_list = await self._db.batch_exec(
-            scripts=[sql, count_sql],
+            scripts=[script, count_script],
             params_list=[tuple(values), tuple(count_values) if count_values else None]
         )
         rows = rows_list[0]
@@ -748,7 +748,7 @@ class UserDao:
             if direction not in ('asc', 'desc'):
                 message = f'invalid order direction with field={field}, direction={direction}'
                 self._logger.error(message)
-                raise Error(DbErrc.INVALID_ORDER.value, message)
+                raise Error(DbErrc.INVALID_ORDERBY.value, message)
             order_parts.append(f'{field} {direction}')
 
         order_clause = 'order by ' + ', '.join(order_parts)

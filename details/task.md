@@ -107,6 +107,8 @@ import logging
 from app.common import Error, Errc as CommonErrc
 from app.task import Task
 from app.feature.user import UserService
+from app.feature.user.common import FieldType
+
 
 class UserTask(Task):
     """User background task"""
@@ -121,33 +123,36 @@ class UserTask(Task):
         super().__init__(config=config)
         self._user_service = None
 
-    def set_user_service(self, service: UserService) -> None:
+    def set_user_service(self, user_service: UserService) -> None:
         """Set user service
 
         Args:
-            service: User service
+            user_service: User service
         """
-        self._user_service = service
+        self._user_service = user_service
 
     async def _run_once(self) -> None:
         """Execute task once (example: clean up expired users)"""
         # Service null check
         if self._user_service is None:
-            message = f'failed to find user_service in UserTask with config={self._config}'
+            message = f'missing user_service in UserTask with config={self._config}'
             self._logger.error(message)
             raise Error(CommonErrc.MISSING_SERVICE.value, message)
 
         try:
             # Get all users
-            user_list = await self._user_service.find()
-            self._logger.info(f'succeeded to check {len(user_list)} users in UserTask')
+            items, pagination = await self._user_service.find(
+                payload={},
+                field_type=FieldType.SIMPLE,
+            )
+            self._logger.info(f'succeeded to check {len(items)} users in UserTask')
 
             # Cleanup logic (example)
-            for user in user_list:
+            for user_field in items:
                 # Example: check user status
-                self._logger.debug(f'checking user with username={user.username} in UserTask')
+                self._logger.debug(f'checking user_field with username={user_field.username} in UserTask')
 
-            self._logger.info(f'succeeded to execute task once in UserTask with checked_count={len(user_list)}')
+            self._logger.info(f'succeeded to execute task once in UserTask with checked_count={len(items)}')
         except Error as e:
             message = f'failed to execute task once in UserTask with code={e.code}, message={e.message}'
             self._logger.error(message)

@@ -5,7 +5,7 @@
 
 ## Responses
 
-All endpoints return responses in the following unified format.
+All business endpoints (excluding the health check) return responses in the following unified format.
 
 ### Success Response
 
@@ -22,7 +22,7 @@ All endpoints return responses in the following unified format.
 ### Error Response
 
 ```json
-{"code": '<namespace>::<module>::<error_code>', "message": '<error description>', "timestamp": 1741407495123}
+{"code": '<project>::<module>::<code>', "message": '<error description>', "timestamp": 1741407495123}
 ```
 
 | Field       | Type   | Description                                          |
@@ -37,16 +37,28 @@ All endpoints return responses in the following unified format.
 
 Health check. Returns `hello` (text/plain).
 
-### POST /<resource>
+### <METHOD> /<resource>[/{id}]
 
 <Description of what this endpoint does>.
 
-**Request**:
+**Path Parameters** (if applicable):
+| Name | Type | Description |
+|------|------|-------------|
+| `id` | int  | Resource ID |
+
+**Query Parameters** (if applicable):
+| Name         | Type | Required | Default | Description                  |
+|--------------|------|----------|---------|------------------------------|
+| `field_type` | str  | No       | simple  | simple or full               |
+| `page`       | int  | No       | 1       | Page number (from 1)         |
+| `page_size`  | int  | No       | -       | Items per page (unlimited)   |
+
+**Request Body** (if applicable):
 ```json
 {"<field>": '<type>', ...}
 ```
 
-**Success Example**:
+**Success Example** (200 / 201 depending on operation):
 ```json
 {
   "code": "",
@@ -58,7 +70,7 @@ Health check. Returns `hello` (text/plain).
 **Error Example**:
 ```json
 {
-  "code": 'project::module::error_code',
+  "code": 'project::module::code',
   "message": 'error description',
   "timestamp": 1741407495123
 }

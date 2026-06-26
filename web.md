@@ -39,7 +39,7 @@ project/
 │   │   │   ├── service.py          # Feature-specific Service classes
 │   │   │   ├── handler.py          # Feature-specific Handler classes (web application only)
 │   │   │   ├── task.py (optional)  # Feature-specific scheduled task classes
-│   │   │   └── __init__.py         # Package initialization, exports all API client classes
+│   │   │   └── __init__.py         # Package initialization, exports all feature classes
 │   ├── main.py                     # Application entry point
 │   ├── middleware.py               # Middleware for request/response processing (web application only)
 │   ├── task.py                     # Application-level scheduled tasks
@@ -49,7 +49,7 @@ project/
 │   └── config.dev.toml             # Development configuration file
 ├── data/                           # Data files
 ├── doc/
-│   └── API.md                      # API documentation (web application only)
+│   └── WEB_API.md                  # API documentation (web application only)
 ├── log/
 │   └── main.log                    # Application log file (auto-generated at runtime)
 ├── test/                           # Test files
@@ -57,6 +57,10 @@ project/
 ├── poetry.lock                     # Poetry dependency lock file (auto-generated)
 └── poetry.toml                     # Poetry global configuration
 ```
+
+### Step 3: Create poetry.toml and pyproject.toml (Web)
+
+> This step is shared between CLI and Web. See `SKILL.md` Step 3 for details. The only Web-specific difference is the `description` field in `pyproject.toml` should be `"A Python web service"`.
 
 ### Step 4: Configuration Files (Web)
 
@@ -143,17 +147,15 @@ async def error_middleware(request: web.Request, handler):
     except Error as e:
         # Business error
         message = f'failed to handle business error with path={request.path}, code={e.code}, message={e.message}'
-        logger.error(message)
-        logger.exception(e)
+        logger.exception(message)
         return web.json_response(
-            ErrorResponse(code=str(e.code), message=e.message).to_dict(),
+            ErrorResponse(code=e.code, message=e.message).to_dict(),
             status=400
         )
     except web.HTTPException as e:
         # aiohttp built-in exceptions (404, 405, etc.)
         message = f'failed to handle http exception with path={request.path}, status={e.status}'
-        logger.error(message)
-        logger.exception(e)
+        logger.exception(message)
         return web.json_response(
             ErrorResponse(
                 code=Errc.INTERNAL_SERVER_ERROR.value,
@@ -164,8 +166,7 @@ async def error_middleware(request: web.Request, handler):
     except Exception as e:
         # Unexpected exception
         message = f'failed to handle request with path={request.path}'
-        logger.error(message)
-        logger.exception(e)
+        logger.exception(message)
         return web.json_response(
             ErrorResponse(
                 code=Errc.INTERNAL_SERVER_ERROR.value,
@@ -235,7 +236,7 @@ async def cors_middleware(request: web.Request, handler):
     return response
 ```
 
-### Step 10: app/main.py (Web)
+### Step 11: app/main.py (Web)
 
 Create `app/main.py` with the following content:
 
@@ -306,20 +307,30 @@ def main():
 
     # Optional: Database initialization (only if user chose a database in Step 1)
     # db_config = {
-    #     "path": config["service"]["db"]["path"],
+    #     "path": config["service"]["db"]["sqlitedb"]["path"],
     #     "check_same_thread": True,
-    #     "timeout": config["service"]["db"]["timeout_s"],
+    #     "timeout": config["service"]["db"]["sqlitedb"]["timeout_s"],
     #     "isolation_level": None
     # }
     # sqlite_db = SqliteDB(config=db_config)
 
     cors_enabled = bool(config["web"].get("cors", False))
 
+    # Optional: Only pass client_max_size when body_limit is configured, otherwise use aiohttp default
+    body_limit = config["web"].get("body_limit")
+    app_kwargs = {"client_max_size": body_limit} if body_limit else {}
+
     if cors_enabled:
-        app = web.Application(middlewares=[logging_middleware, error_middleware, cors_middleware])
+        app = web.Application(
+            middlewares=[logging_middleware, error_middleware, cors_middleware],
+            **app_kwargs
+        )
         logger.info(f'CORS middleware enabled with cors_enabled={cors_enabled}')
     else:
-        app = web.Application(middlewares=[logging_middleware, error_middleware])
+        app = web.Application(
+            middlewares=[logging_middleware, error_middleware],
+            **app_kwargs
+        )
         logger.info(f'CORS middleware disabled with cors_enabled={cors_enabled}')
 
     # Optional: Store database instance (only if user chose a database)
@@ -398,9 +409,9 @@ Add after database initialization (if any), before `app = web.Application(...)`:
 ```python
     # Optional: Database initialization (only if user chose a database in Step 1)
     # db_config = {
-    #     "path": config["service"]["db"]["path"],
+    #     "path": config["service"]["db"]["sqlitedb"]["path"],
     #     "check_same_thread": True,
-    #     "timeout": config["service"]["db"]["timeout_s"],
+    #     "timeout": config["service"]["db"]["sqlitedb"]["timeout_s"],
     #     "isolation_level": None
     # }
     # sqlite_db = SqliteDB(config=db_config)
