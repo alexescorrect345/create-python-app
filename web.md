@@ -120,8 +120,6 @@ timeout_s = 30.0  # Database operation timeout (seconds)
 Create `app/middleware.py` with the following content:
 
 ```python
-"""Middleware module: unified management of all middleware"""
-
 import time
 import logging
 

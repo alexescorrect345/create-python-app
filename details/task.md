@@ -104,7 +104,7 @@ await task.close()  # Sets self._running = False, allowing the task loop to exit
 import asyncio
 import logging
 
-from app.common import Error, Errc as CommonErrc
+from app.common import Errc as CommonErrc, Error
 from app.task import Task
 from app.feature.user import UserService
 from app.feature.user.common import FieldType

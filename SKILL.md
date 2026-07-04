@@ -328,8 +328,6 @@ class Pagination:
 Create `app/api/__init__.py` with the following content:
 
 ```python
-"""API module"""
-
 # Add API client class exports here, e.g.:
 # from app.api.{Name}Api import {Name}Api
 
@@ -341,8 +339,6 @@ __all__ = []
 Create `app/api/common.py` with the following content:
 
 ```python
-"""API module common error codes"""
-
 from enum import Enum
 from typing import Any
 
@@ -366,14 +362,13 @@ def sanitize_headers(headers: dict[str, str] | None) -> dict[str, str] | None:
 Create `app/api/api.py` with the following content:
 
 ```python
-"""API base classes - InternalApi for SuccessResponse/ErrorResponse format APIs, ExternalApi for raw JSON APIs."""
 import time
 import logging
 from typing import Any
 
 import aiohttp
 
-from app.common import Error, Errc as CommonErrc, SuccessResponse, ErrorResponse
+from app.common import Errc as CommonErrc, Error, ErrorResponse, SuccessResponse
 from app.api.common import Errc as ApiErrc, sanitize_headers
 
 
@@ -822,8 +817,6 @@ Create the database layer files in `app/db/`:
 #### 9.1 Create `app/db/__init__.py`
 
 ```python
-"""Database module"""
-
 from app.db.DB import DB
 
 __all__ = ['DB']
@@ -900,8 +893,6 @@ class DB(ABC):
 #### 9.3 Create `app/db/common.py`
 
 ```python
-"""Database module common error codes"""
-
 from enum import Enum
 
 
@@ -1158,8 +1149,6 @@ Update `app/api/__init__.py` to export the newly created API client class. This 
 
 ```python
 # app/api/__init__.py
-"""API module"""
-
 # Add API client class exports here, e.g.:
 # from app.api.{Name}Api import {Name}Api
 

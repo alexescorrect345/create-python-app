@@ -98,7 +98,7 @@ import sys
 import logging
 from typing import Any, Optional
 
-from app.common import Error, Errc as CommonErrc, Pagination
+from app.common import Errc as CommonErrc, Error, Pagination
 from app.feature.user.common import Errc as UserErrc, FieldType
 from app.feature.user.dao import UserDao
 from app.feature.user.field import UserField
