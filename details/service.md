@@ -4,6 +4,16 @@
 
 `app/feature/user/service.py`
 
+> **⚠️ Multiple Independent Services**
+>
+> When a feature contains multiple independent services, each handling a distinct data source or processing pipeline with complex logic (e.g., different replay sources for an ASR feature), splitting them into separate files is permitted:
+>
+> - Name each file after its Service class: `{Name}Service.py` (e.g., `BvReplayService.py`, `ArchiveReplayService.py`)
+> - Each file should contain one primary Service class
+> - Update `app/feature/{name}/__init__.py` to export all Service classes
+>
+> This approach keeps each file focused and avoids an oversized `service.py`. Use this exception judiciously — if services share significant logic, prefer a single `service.py`.
+
 ### Service Layer Responsibilities
 
 1. **Business Logic**: Validate data legality, process business rules

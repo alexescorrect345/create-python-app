@@ -83,7 +83,6 @@ Where `{name}` comes from the `{name}Api.py` filename.
 All InternalApi subclasses inherit from `app.api.api.InternalApi` base class. Subclasses only need to implement business methods by calling `self._get()`, `self._post()`, `self._put()`, `self._delete()`.
 
 ```python
-"""User API Client - Calls internal user APIs"""
 from app.api.api import InternalApi
 from app.api.response import SuccessResponse
 
@@ -187,7 +186,6 @@ class UserApi(InternalApi):
 All ExternalApi subclasses inherit from `app.api.api.ExternalApi` base class. Subclasses only need to implement business methods by calling `self._get()`, `self._post()`, `self._put()`, `self._delete()`.
 
 ```python
-"""MyExternal API Client - Calls third-party APIs"""
 from typing import Dict, Any, List, Optional
 
 from app.api.api import ExternalApi

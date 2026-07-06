@@ -325,8 +325,6 @@ class Pagination:
 Create `app/api/__init__.py` with the following content:
 
 ```python
-"""API module"""
-
 # Add API client class exports here, e.g.:
 # from app.api.{Name}Api import {Name}Api
 
@@ -338,8 +336,6 @@ __all__ = []
 Create `app/api/common.py` with the following content:
 
 ```python
-"""API module common error codes"""
-
 from enum import Enum
 from typing import Any, Dict, Optional
 
@@ -363,7 +359,6 @@ def sanitize_headers(headers: Optional[Dict[str, str]]) -> Optional[Dict[str, st
 Create `app/api/api.py` with the following content:
 
 ```python
-"""API base classes - InternalApi for SuccessResponse/ErrorResponse format APIs, ExternalApi for raw JSON APIs."""
 import time
 import logging
 from typing import Dict, Any, Optional
@@ -919,8 +914,6 @@ Create the database layer files in `app/db/`:
 #### 9.1 Create `app/db/__init__.py`
 
 ```python
-"""Database module"""
-
 from app.db.DB import DB
 
 __all__ = ["DB"]
@@ -998,8 +991,6 @@ class DB(ABC):
 #### 9.3 Create `app/db/common.py`
 
 ```python
-"""Database module common error codes"""
-
 from enum import Enum
 
 
@@ -1141,8 +1132,6 @@ Create `app/feature/{name}/__init__.py` to export all classes from this feature 
 > **CLI**:
 > ```python
 > # app/feature/{name}/__init__.py
-> """Feature module - {name}"""
->
 > from app.feature.{name}.field import {Name}Field
 > from app.feature.{name}.service import {Name}Service
 > # Optional (only when database is needed): from app.feature.{name}.dao import {Name}Dao
@@ -1159,8 +1148,6 @@ Create `app/feature/{name}/__init__.py` to export all classes from this feature 
 > **Web**:
 > ```python
 > # app/feature/{name}/__init__.py
-> """Feature module - {name}"""
->
 > from app.feature.{name}.field import {Name}Field
 > from app.feature.{name}.service import {Name}Service
 > from app.feature.{name}.handler import {Name}Handler
@@ -1238,8 +1225,6 @@ Update `app/api/__init__.py` to export the newly created API client class. This 
 
 ```python
 # app/api/__init__.py
-"""API module"""
-
 # Add API client class exports here, e.g.:
 # from app.api.{Name}Api import {Name}Api
 
