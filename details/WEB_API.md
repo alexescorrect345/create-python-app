@@ -5,31 +5,31 @@
 
 ## Responses
 
-All endpoints return responses in the following unified format.
+All business endpoints (excluding the health check) return responses in the following unified format.
 
 ### Success Response
 
 ```json
-{"code": "", "data": <response_data>, "timestamp": "2026-03-08T05:38:15.123"}
+{"code": "", "data": <response_data>, "timestamp": 1741407495123}
 ```
 
 | Field       | Type   | Description                                          |
 |-------------|--------|------------------------------------------------------|
 | `code`      | string | Error code. Empty string `""` indicates success        |
 | `data`      | any    | Response payload (type depends on endpoint)            |
-| `timestamp` | string | UTC time in format `%Y-%m-%dT%H:%M:%S.%f` (milliseconds, no trailing `Z`) |
+| `timestamp` | int    | Millisecond UTC timestamp                             |
 
 ### Error Response
 
 ```json
-{"code": "<namespace>::<module>::<error_code>", "message": "<error description>", "timestamp": "2026-03-08T05:38:15.123"}
+{"code": '<project>::<module>::<code>', "message": '<error description>', "timestamp": 1741407495123}
 ```
 
 | Field       | Type   | Description                                          |
 |-------------|--------|------------------------------------------------------|
 | `code`      | string | Error code in format `project::module::code`           |
 | `message`   | string | Human-readable error description                       |
-| `timestamp` | string | UTC time in format `%Y-%m-%dT%H:%M:%S.%f` (milliseconds, no trailing `Z`) |
+| `timestamp` | int    | Millisecond UTC timestamp                             |
 
 ## Endpoints
 
@@ -37,29 +37,41 @@ All endpoints return responses in the following unified format.
 
 Health check. Returns `hello` (text/plain).
 
-### POST /<resource>
+### <METHOD> /<resource>[/{id}]
 
 <Description of what this endpoint does>.
 
-**Request**:
+**Path Parameters** (if applicable):
+| Name | Type | Description |
+|------|------|-------------|
+| `id` | int  | Resource ID |
+
+**Query Parameters** (if applicable):
+| Name         | Type | Required | Default | Description                  |
+|--------------|------|----------|---------|------------------------------|
+| `field_type` | str  | No       | simple  | simple or full               |
+| `page`       | int  | No       | 1       | Page number (from 1)         |
+| `page_size`  | int  | No       | -       | Items per page (unlimited)   |
+
+**Request Body** (if applicable):
 ```json
-{"<field>": <type>, ...}
+{"<field>": '<type>', ...}
 ```
 
-**Success Example**:
+**Success Example** (200 / 201 depending on operation):
 ```json
 {
   "code": "",
   "data": { ... },
-  "timestamp": "2026-03-08T05:38:15.123"
+  "timestamp": 1741407495123
 }
 ```
 
 **Error Example**:
 ```json
 {
-  "code": "project::module::error_code",
-  "message": "error description",
-  "timestamp": "2026-03-08T05:38:15.123"
+  "code": 'project::module::code',
+  "message": 'error description',
+  "timestamp": 1741407495123
 }
 ```
