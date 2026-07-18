@@ -182,9 +182,8 @@ class SqliteDB(DB):
             if self._config.get("isolation_level") is not None:
                 try:
                     await self._connection.rollback()
-                except Exception as e1:
-                    self._logger.error(f'failed to rollback transaction with db_path={self._config["db_path"]}, script={script.strip()}, params={params}')
-                    self._logger.exception(e1)
+                except Exception:
+                    self._logger.exception(f'failed to rollback transaction with db_path={self._config["db_path"]}, script={script.strip()}, params={params}')
 
             message = f'failed to execute script with db_path={self._config["db_path"]}, script={script.strip()}, params={params}'
             self._logger.error(message)
@@ -195,9 +194,8 @@ class SqliteDB(DB):
                 try:
                     await cursor.close()
                     self._logger.debug(f'succeeded to close cursor with db_path={self._config["db_path"]}')
-                except Exception as e1:
-                    self._logger.error(f'failed to close cursor with db_path={self._config["db_path"]}, script={script.strip()}, params={params}')
-                    self._logger.exception(e1)
+                except Exception:
+                    self._logger.exception(f'failed to close cursor with db_path={self._config["db_path"]}, script={script.strip()}, params={params}')
 
     async def batch_exec(
         self,
@@ -261,9 +259,8 @@ class SqliteDB(DB):
             if self._config.get("isolation_level") is not None:
                 try:
                     await self._connection.rollback()
-                except Exception as e1:
-                    self._logger.error(f'failed to rollback transaction with db_path={self._config["db_path"]}, scripts={scripts}, params_list={params_list}')
-                    self._logger.exception(e1)
+                except Exception:
+                    self._logger.exception(f'failed to rollback transaction with db_path={self._config["db_path"]}, scripts={scripts}, params_list={params_list}')
 
             message = f'failed to batch execute scripts with db_path={self._config["db_path"]}, scripts={scripts}, params_list={params_list}'
             self._logger.error(message)
@@ -274,9 +271,8 @@ class SqliteDB(DB):
                 try:
                     await cursor.close()
                     self._logger.debug(f'succeeded to close cursor with db_path={self._config["db_path"]}')
-                except Exception as e1:
-                    self._logger.error(f'failed to close cursor with db_path={self._config["db_path"]}, scripts={scripts}, params_list={params_list}')
-                    self._logger.exception(e1)
+                except Exception:
+                    self._logger.exception(f'failed to close cursor with db_path={self._config["db_path"]}, scripts={scripts}, params_list={params_list}')
 
     async def _exec_once(
         self,

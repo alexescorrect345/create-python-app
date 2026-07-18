@@ -362,6 +362,7 @@ def sanitize_headers(headers: dict[str, str] | None) -> dict[str, str] | None:
 Create `app/api/api.py` with the following content:
 
 ```python
+import json
 import time
 import logging
 from typing import Any
@@ -608,7 +609,8 @@ class ExternalApi:
 
         Args:
             api_config: API configuration dict, e.g. config["service"]["api"]["myexternalapi"]
-                        Must contain 'base_url' and 'timeout_s'
+                        Must contain 'timeout_s'. Subclasses may add their own fields
+                        (e.g. 'base_url', 'headers') as needed
         """
         self._api_config = api_config
         self._session = None
@@ -624,13 +626,13 @@ class ExternalApi:
             try:
                 await self._session.close()
             except Exception as e:
-                message = f'failed to close session with base_url={self._api_config["base_url"]}'
+                message = f'failed to close session with class={self.__class__.__name__}'
                 self._logger.exception(message)
 
     async def _request(
         self,
         method: str,
-        url: str,
+        full_url: str,
         params: dict[str, Any] | None = None,
         payload: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
@@ -639,7 +641,7 @@ class ExternalApi:
 
         Args:
             method: HTTP method, e.g. 'GET', 'POST', 'PUT'
-            url: Request path, e.g. '/data'
+            full_url: Full request URL, e.g. 'https://example.com/data'
             params: Query parameters (appended to URL)
             payload: Request body
             headers: Request headers
@@ -650,15 +652,12 @@ class ExternalApi:
         Raises:
             Error: API request failed
         """
-        verb = method.lower()
-
         if not self._session:
-            message = f'failed to find session with base_url={self._api_config["base_url"]}'
+            message = f'failed to find session with full_url={full_url}'
             self._logger.error(message)
             raise Error(ApiErrc.SESSION_NOT_FOUND.value, message)
 
-        base_url = self._api_config["base_url"].rstrip('/')
-        full_url = f'{base_url}{url}'
+        verb = method.lower()
         start_time = time.perf_counter()
         safe_headers = sanitize_headers(headers)
 
@@ -673,9 +672,11 @@ class ExternalApi:
                     self._logger.error(message)
                     raise Error(ApiErrc.API_REQUEST_FAILED.value, message)
 
-                result = await response.json()
                 self._logger.debug(f'[{elapsed:.3f}s]succeeded to {verb} with url={full_url}, params={params}, payload={payload}, headers={safe_headers}')
-                return result
+                body_bytes = await response.read()
+                if not body_bytes:
+                    return None
+                return json.loads(body_bytes)
 
         except Error:
             raise
@@ -694,14 +695,14 @@ class ExternalApi:
 
     async def _get(
         self,
-        url: str,
+        full_url: str,
         params: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
     ) -> Any:
         """Send GET request
 
         Args:
-            url: Request path, e.g. '/data'
+            full_url: Full request URL, e.g. 'https://example.com/data'
             params: Query parameters
             headers: Request headers
 
@@ -711,18 +712,18 @@ class ExternalApi:
         Raises:
             Error: API request failed
         """
-        return await self._request('GET', url, params=params, headers=headers)
+        return await self._request('GET', full_url, params=params, headers=headers)
 
     async def _post(
         self,
-        url: str,
+        full_url: str,
         payload: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
     ) -> Any:
         """Send POST request
 
         Args:
-            url: Request path, e.g. '/data'
+            full_url: Full request URL, e.g. 'https://example.com/data'
             payload: Request body
             headers: Request headers
 
@@ -732,18 +733,18 @@ class ExternalApi:
         Raises:
             Error: API request failed
         """
-        return await self._request('POST', url, payload=payload, headers=headers)
+        return await self._request('POST', full_url, payload=payload, headers=headers)
 
     async def _put(
         self,
-        url: str,
+        full_url: str,
         payload: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
     ) -> Any:
         """Send PUT request
 
         Args:
-            url: Request path, e.g. '/data/1'
+            full_url: Full request URL, e.g. 'https://example.com/data/1'
             payload: Request body
             headers: Request headers
 
@@ -753,18 +754,18 @@ class ExternalApi:
         Raises:
             Error: API request failed
         """
-        return await self._request('PUT', url, payload=payload, headers=headers)
+        return await self._request('PUT', full_url, payload=payload, headers=headers)
 
     async def _delete(
         self,
-        url: str,
+        full_url: str,
         params: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
     ) -> None:
         """Send DELETE request (no response body parsing, compatible with 204 No Content)
 
         Args:
-            url: Request path, e.g. '/data/1'
+            full_url: Full request URL, e.g. 'https://example.com/data/1'
             params: Query parameters (appended to URL)
             headers: Request headers
 
@@ -772,12 +773,10 @@ class ExternalApi:
             Error: API request failed
         """
         if not self._session:
-            message = f'failed to find session with base_url={self._api_config["base_url"]}'
+            message = f'failed to find session with full_url={full_url}'
             self._logger.error(message)
             raise Error(ApiErrc.SESSION_NOT_FOUND.value, message)
 
-        base_url = self._api_config["base_url"].rstrip('/')
-        full_url = f'{base_url}{url}'
         start_time = time.perf_counter()
         safe_headers = sanitize_headers(headers)
 
@@ -965,6 +964,11 @@ class Task(ABC):
         """
         self._config = config
         self._running = False
+
+    @abstractmethod
+    async def init(self) -> None:
+        """Initialize"""
+        pass
 
     @abstractmethod
     async def _run_once(self) -> None:

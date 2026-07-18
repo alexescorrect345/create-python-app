@@ -128,7 +128,7 @@ async def main():
     log_level = config["log"]["main"]
     logging.basicConfig(
         level=getattr(logging, log_level),
-        format='%(asctime)s.%(msecs)03d - %(name)s - %(levelname)s - %(message)s',
+        format='%(asctime)s.%(msecs)03d - [%(process)d][%(filename)-10s:%(lineno)6d][%(levelname)-7s] - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 

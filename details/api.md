@@ -29,7 +29,7 @@
 `ExternalApi` is a base class defined in `app/api/api.py` (see Step 8 in SKILL.md), providing `_get`, `_post`, `_put`, `_delete` methods that encapsulate HTTP requests and return raw JSON responses. All external API clients must subclass `ExternalApi` to implement interface access.
 
 **Characteristics**:
-- Directly return raw `response.json()`
+- Return raw JSON (parsed via `response.read()` + `json.loads()`); return `None` for empty bodies (e.g. 204 No Content)
 - Need to check HTTP status code
 - Caller parses the response structure on their own
 
@@ -230,5 +230,5 @@ class MyExternalApi(ExternalApi):
         Raises:
             Error: HTTP request failed
         """
-        return await self._get('/data', params=params)
+        return await self._get(f'{self._api_config["base_url"]}/data', params=params)
 ```

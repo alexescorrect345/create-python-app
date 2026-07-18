@@ -42,10 +42,9 @@ async def _run_once(self):
     try:
         # Execute task logic
         pass
-    except Exception as e:
+    except Exception:
         message = f'failed to execute task once in UserTask'
-        logger.error(message)
-        logger.exception(e)
+        logger.exception(message)
     finally:
         await asyncio.sleep(60)  # Must have interval
 
@@ -54,10 +53,9 @@ async def _run_once(self):
     try:
         # Execute task logic
         pass
-    except Exception as e:
+    except Exception:
         message = f'failed to execute task once in UserTask'
-        logger.error(message)
-        logger.exception(e)
+        logger.exception(message)
     # Missing asyncio.sleep, task will immediately start next loop iteration
 ```
 
@@ -91,6 +89,7 @@ from app.feature.user.task import UserTask
 # If no background task is needed, initialization can be skipped
 task = UserTask(config=config)
 task.set_user_service(service=user_service)
+await task.init()
 # Use create_task to start asynchronously, without blocking the startup flow
 asyncio.create_task(task.run_in_loop())
 
@@ -131,6 +130,10 @@ class UserTask(Task):
         """
         self._user_service = user_service
 
+    async def init(self) -> None:
+        """Initialize task"""
+        pass
+
     async def _run_once(self) -> None:
         """Execute task once (example: clean up expired users)"""
         # Service null check
@@ -155,12 +158,10 @@ class UserTask(Task):
             self._logger.info(f'succeeded to execute task once in UserTask with checked_count={len(items)}')
         except Error as e:
             message = f'failed to execute task once in UserTask with code={e.code}, message={e.message}'
-            self._logger.error(message)
-            self._logger.exception(e)
-        except Exception as e:
+            self._logger.exception(message)
+        except Exception:
             message = f'failed to execute task once in UserTask with config={self._config}'
-            self._logger.error(message)
-            self._logger.exception(e)
+            self._logger.exception(message)
         finally:
             # Sleep regardless of success or failure
             interval_s = self._config["task_interval_s"]

@@ -129,6 +129,7 @@ from app.common import Errc, Error, ErrorResponse
 
 logger = logging.getLogger(__name__)
 
+
 @web.middleware
 async def error_middleware(request: web.Request, handler):
     """Error handling middleware
@@ -172,6 +173,7 @@ async def error_middleware(request: web.Request, handler):
             ).to_dict(),
             status=500
         )
+
 
 @web.middleware
 async def logging_middleware(request: web.Request, handler):
@@ -217,19 +219,19 @@ async def cors_middleware(request: web.Request, handler):
     # Handle OPTIONS preflight request
     if request.method == 'OPTIONS':
         response = web.Response(status=200)
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-        response.headers['Access-Control-Max-Age'] = '86400'
+        response.headers["Access-Control-Allow-Origin"] = '*'
+        response.headers["Access-Control-Allow-Methods"] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+        response.headers["Access-Control-Allow-Headers"] = 'Content-Type, Authorization'
+        response.headers["Access-Control-Max-Age"] = '86400'
         return response
 
     # Call next middleware or handler
     response = await handler(request)
 
     # Add CORS headers (open by default)
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    response.headers["Access-Control-Allow-Origin"] = '*'
+    response.headers["Access-Control-Allow-Methods"] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+    response.headers["Access-Control-Allow-Headers"] = 'Content-Type, Authorization'
 
     return response
 ```
@@ -268,7 +270,7 @@ def main():
     log_level = config["log"]["main"]
     logging.basicConfig(
         level=getattr(logging, log_level),
-        format='%(asctime)s.%(msecs)03d - %(name)s - %(levelname)s - %(message)s',
+        format='%(asctime)s.%(msecs)03d - [%(process)d][%(filename)-10s:%(lineno)6d][%(levelname)-7s] - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 
