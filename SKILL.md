@@ -125,7 +125,7 @@ line-length = 88
 Create `config/` directory and configuration files. The configuration system supports multiple environments through different config files. By default, two configuration files are provided:
 
 - `config/config.dev.toml` — for non-production environments (development, testing)
-- `config/config.toml` — for production environment
+- `config/config.prd.toml` — for production environment
 
 Users can also create additional config files (e.g., `config.staging.toml`, `config.local.toml`) as needed.
 
@@ -135,7 +135,7 @@ Users can also create additional config files (e.g., `config.staging.toml`, `con
 # Log configuration
 [log]
 main = "DEBUG"  # config.dev.toml, supports DEBUG, INFO, WARNING, ERROR, CRITICAL
-# main = "INFO" # config.toml
+# main = "INFO" # config.prd.toml
 ```
 
 > **⚠️ CLI vs Web Difference**
@@ -1167,7 +1167,7 @@ from app.api.{Name}Api import {Name}Api
 
 ### Step 5: Add Configuration
 
-Add API configuration to `config/config.dev.toml` and `config/config.toml`:
+Add API configuration to `config/config.dev.toml` and `config/config.prd.toml`:
 
 ```toml
 [service.api.{name}]

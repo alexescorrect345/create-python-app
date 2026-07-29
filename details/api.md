@@ -68,7 +68,7 @@ ExternalApi typically doesn't have a complete CRUD system, only one query method
 
 #### Config
 
-Configuration rules in `config.toml` and `config.dev.toml`:
+Configuration rules in `config.prd.toml` and `config.dev.toml`:
 
 ```toml
 [service.api.{name}]

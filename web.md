@@ -45,7 +45,7 @@ project/
 │   ├── task.py                     # Application-level scheduled tasks
 │   └── __init__.py                 # Package initialization
 ├── config/
-│   ├── config.toml                 # Production configuration file
+│   ├── config.prd.toml             # Production configuration file
 │   └── config.dev.toml             # Development configuration file
 ├── data/                           # Data files
 ├── doc/
@@ -87,7 +87,7 @@ path = "./data/main.db"  # SQLite database file path
 timeout_s = 5.0  # Database operation timeout (seconds)
 ```
 
-#### config/config.toml
+#### config/config.prd.toml
 
 ```toml
 # Log configuration
@@ -255,10 +255,7 @@ def main():
 
     # Load configuration file
     env = os.getenv("APP_ENV", "dev")
-    if env == 'production':
-        config_path = 'config/config.toml'
-    else:
-        config_path = 'config/config.dev.toml'
+    config_path = f'config/config.{env}.toml'
 
     with open(config_path, 'rb') as f:
         config = tomllib.load(f)
@@ -267,10 +264,9 @@ def main():
     # from app.db.SqliteDB import SqliteDB
 
     # Initialize logging
-    log_level = config["log"]["main"]
     logging.basicConfig(
-        level=getattr(logging, log_level),
-        format='%(asctime)s.%(msecs)03d - [%(process)d][%(filename)-10s:%(lineno)6d][%(levelname)-7s] - %(message)s',
+        level=getattr(logging, config["log"]["main"]),
+        format='%(asctime)s.%(msecs)03d [%(process)7d][%(name)-19s:%(lineno)4d][%(funcName)-20s][%(levelname)-9s] - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 
@@ -287,23 +283,23 @@ def main():
 
     async def on_startup(app: web.Application):
         """Application startup hook - only handles async resource initialization"""
-        logger.info(f'ready to startup application on host={host}, port={port}')
+        logger.info(f'ready to startup application with env={env}')
 
         sqlite_db = app.get("sqlite_db")
         if sqlite_db:
             await sqlite_db.connect()
 
-        logger.info(f'succeeded to startup application on host={host}, port={port}')
+        logger.info(f'succeeded to startup application with env={env}')
 
     async def on_cleanup(app: web.Application):
         """Application cleanup hook"""
-        logger.info(f'ready to cleanup application on host={host}, port={port}')
+        logger.info(f'ready to cleanup application with env={env}')
 
         sqlite_db = app.get("sqlite_db")
         if sqlite_db:
             await sqlite_db.close()
 
-        logger.info(f'succeeded to cleanup application on host={host}, port={port}')
+        logger.info(f'succeeded to cleanup application with env={env}')
 
     # Optional: Database initialization (only if user chose a database in Step 1)
     # db_config = {
@@ -325,13 +321,13 @@ def main():
             middlewares=[logging_middleware, error_middleware, cors_middleware],
             **app_kwargs
         )
-        logger.info(f'CORS middleware enabled with cors_enabled={cors_enabled}')
+        logger.info(f'CORS middleware enabled with env={env}')
     else:
         app = web.Application(
             middlewares=[logging_middleware, error_middleware],
             **app_kwargs
         )
-        logger.info(f'CORS middleware disabled with cors_enabled={cors_enabled}')
+        logger.info(f'CORS middleware disabled with env={env}')
 
     # Optional: Store database instance (only if user chose a database)
     # app["sqlite_db"] = sqlite_db
@@ -341,7 +337,7 @@ def main():
     app.on_startup.append(on_startup)
     app.on_cleanup.append(on_cleanup)
 
-    logger.info(f'ready to run app on env={env}, host={host}, port={port}')
+    logger.info(f'ready to run app with env={env}, host={host}, port={port}')
     web.run_app(app, host=host, port=port)
 
 
@@ -464,7 +460,7 @@ If the feature needs to initialize data tables at startup, add to the `on_startu
 ```python
     async def on_startup(app: web.Application):
         """Application startup hook - only handles async resource initialization"""
-        logger.info(f'ready to startup application on host={host}, port={port}')
+        logger.info(f'ready to startup application with env={env}')
 
         sqlite_db = app.get("sqlite_db")
         if sqlite_db:
@@ -475,7 +471,7 @@ If the feature needs to initialize data tables at startup, add to the `on_startu
         # if user_dao:
         #     await user_dao.init_table()
 
-        logger.info(f'succeeded to startup application on host={host}, port={port}')
+        logger.info(f'succeeded to startup application with env={env}')
 ```
 
 ---
@@ -516,7 +512,7 @@ Add API session cleanup in the `on_cleanup` function:
 ```python
     async def on_cleanup(app: web.Application):
         """Application cleanup hook"""
-        logger.info(f'ready to cleanup application on host={host}, port={port}')
+        logger.info(f'ready to cleanup application with env={env}')
 
         sqlite_db = app.get("sqlite_db")
         if sqlite_db:
@@ -527,7 +523,7 @@ Add API session cleanup in the `on_cleanup` function:
         if {name}_api:
             await {name}_api.close()
 
-        logger.info(f'succeeded to cleanup application on host={host}, port={port}')
+        logger.info(f'succeeded to cleanup application with env={env}')
 ```
 
 #### 4. Store in app Dictionary

@@ -207,18 +207,12 @@ class DolphinDB(DB):
         Raises:
             Error:
                 - Empty script: DbErrc.MISSING_SCRIPT
-                - Not connected: DbErrc.NOT_CONNECTED
                 - Execution failed: DbErrc.FAILED_TO_EXEC
         """
         if not script.strip():
             message = f'missing script with host={self._config["host"]}, port={self._config["port"]}, userid={self._config["userid"]}'
             self._logger.error(message)
             raise Error(DbErrc.MISSING_SCRIPT.value, message)
-
-        if not self.is_connected():
-            message = f'did not connect to database with host={self._config["host"]}, port={self._config["port"]}, userid={self._config["userid"]}'
-            self._logger.error(message)
-            raise Error(DbErrc.NOT_CONNECTED.value, message)
 
         try:
             result = await self._exec_once(script, params)
@@ -250,18 +244,12 @@ class DolphinDB(DB):
         Raises:
             Error:
                 - Empty scripts: DbErrc.MISSING_SCRIPT
-                - Not connected: DbErrc.NOT_CONNECTED
                 - Execution failed: DbErrc.FAILED_TO_EXEC
         """
         if not scripts:
             message = f'missing scripts with host={self._config["host"]}, port={self._config["port"]}, userid={self._config["userid"]}'
             self._logger.error(message)
             raise Error(DbErrc.MISSING_SCRIPT.value, message)
-
-        if not self.is_connected():
-            message = f'did not connect to database with host={self._config["host"]}, port={self._config["port"]}, userid={self._config["userid"]}'
-            self._logger.error(message)
-            raise Error(DbErrc.NOT_CONNECTED.value, message)
 
         result_list: List[Any] = []
 

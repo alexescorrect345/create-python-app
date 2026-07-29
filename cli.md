@@ -43,7 +43,7 @@ project/
 │   ├── task.py                     # Application-level scheduled tasks
 │   └── __init__.py                 # Package initialization
 ├── config/
-│   ├── config.toml                 # Production configuration file
+│   ├── config.prd.toml             # Production configuration file
 │   └── config.dev.toml             # Development configuration file
 ├── data/                           # Data files
 ├── log/
@@ -77,7 +77,7 @@ path = "./data/main.db"  # SQLite database file path
 timeout_s = 5.0  # Database operation timeout (seconds)
 ```
 
-#### config/config.toml
+#### config/config.prd.toml
 
 ```toml
 # Log configuration
@@ -116,19 +116,15 @@ async def main():
 
     # Load configuration file
     env = os.getenv("APP_ENV", "dev")
-    if env == 'production':
-        config_path = 'config/config.toml'
-    else:
-        config_path = 'config/config.dev.toml'
+    config_path = f'config/config.{env}.toml'
 
     with open(config_path, 'rb') as f:
         config = tomllib.load(f)
 
     # Initialize logging
-    log_level = config["log"]["main"]
     logging.basicConfig(
-        level=getattr(logging, log_level),
-        format='%(asctime)s.%(msecs)03d - [%(process)d][%(filename)-10s:%(lineno)6d][%(levelname)-7s] - %(message)s',
+        level=getattr(logging, config["log"]["main"]),
+        format='%(asctime)s.%(msecs)03d [%(process)7d][%(name)-19s:%(lineno)4d][%(funcName)-20s][%(levelname)-9s] - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 
