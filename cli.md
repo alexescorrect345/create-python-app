@@ -124,7 +124,7 @@ async def main():
     # Initialize logging
     logging.basicConfig(
         level=getattr(logging, config["log"]["main"]),
-        format='%(asctime)s.%(msecs)03d [%(process)7d][%(name)-19s:%(lineno)4d][%(funcName)-20s][%(levelname)-9s] - %(message)s',
+        format='%(asctime)s.%(msecs)03d [%(process)d][%(name)-19s:%(lineno)4d][%(levelname)-9s] - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 
