@@ -92,7 +92,6 @@ DAO uses **Setter Injection** pattern for dependency injection:
 
 2. **Setter method injection for optional dependencies**:
    - `set_db(db)` - Inject database instance
-   - Supports chaining: `dao.set_db(db)`
 
 3. **Lazy initialization**:
    - DAO can be created first, DB dependency injected later
@@ -111,6 +110,9 @@ user_dao.set_db(db=db)
 ### Complete UserDao Template (SQLite Example)
 
 > ⚠️ The following example is a `SqliteDB`-specific DAO template. When using `DolphinDB`, create a database-specific DAO implementation with DolphinDB table initialization, write helpers, query scripts, result mapping, and ID handling.
+>
+> `_INIT_SEQ` is the first ID generated for a new table. Initialize `sqlite_sequence`
+> to `_INIT_SEQ - 1`, and never lower an existing sequence during startup.
 
 ```python
 import sys
@@ -171,14 +173,28 @@ class UserDao:
         '''
 
         init_seq_script = f'''
-        INSERT OR REPLACE INTO sqlite_sequence (name, seq)
-        VALUES ('{self._TABLE_NAME}', {self._INIT_SEQ});
+        INSERT INTO sqlite_sequence (name, seq)
+        SELECT '{self._TABLE_NAME}', {self._INIT_SEQ - 1}
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM sqlite_sequence
+            WHERE name = '{self._TABLE_NAME}'
+        );
         '''
 
-        index_username_script = f'CREATE INDEX IF NOT EXISTS idx_user_username ON {self._TABLE_NAME}(username);'
+        ensure_seq_script = f'''
+        UPDATE sqlite_sequence
+        SET seq = {self._INIT_SEQ - 1}
+        WHERE name = '{self._TABLE_NAME}'
+          AND seq < {self._INIT_SEQ - 1};
+        '''
 
         await self._db.batch_exec(
-            scripts=[create_table_script, init_seq_script, index_username_script]
+            scripts=[
+                create_table_script,
+                init_seq_script,
+                ensure_seq_script,
+            ]
         )
         self._logger.info(f'succeeded to initialize {self._TABLE_NAME} table')
 
@@ -432,7 +448,7 @@ class UserDao:
 
 ### Complete UserDao Template (DolphinDB Example)
 
-> ⚠️ This example uses DolphinDB scripts executed through `exec` and `batch_exec`. Because DolphinDB has no SQLite-style auto-increment, `insert` generates IDs internally via `max(id) + 1` (with `_INIT_SEQ` as the floor) and returns the generated ID — matching the SQLite DAO contract. Upsert uses `upsert!`, and query operations load DFS tables with DolphinDB scripts. For `append!` and `upsert!`, keep the input table columns aligned with the target DFS table schema, including the actual `id` type.
+> ⚠️ This example uses DolphinDB scripts executed through `exec` and `batch_exec`. Because DolphinDB has no SQLite-style auto-increment, `insert` generates IDs internally via `max(id) + 1` (starting from `_INIT_SEQ` for an empty table) and returns the generated ID — matching the SQLite DAO contract. Upsert uses `upsert!`, and query operations load DFS tables with DolphinDB scripts. For `append!` and `upsert!`, keep the input table columns aligned with the target DFS table schema, including the actual `id` type.
 
 ```python
 import sys
@@ -507,7 +523,7 @@ class UserDao:
 
         Note:
             DolphinDB has no SQLite-style auto-increment. This method generates
-            the ID internally via `max(id) + 1` (with `_INIT_SEQ` as the floor
+            the ID internally via `max(id) + 1` (starting from `_INIT_SEQ`
             for empty tables) so that the DAO contract matches the SQLite DAO:
             the caller passes a UserField without an ID and receives the
             generated ID back. It is a thin wrapper over `batch_insert`.
@@ -529,8 +545,8 @@ class UserDao:
 
         Note:
             DolphinDB has no SQLite-style auto-increment. This method generates
-            IDs internally via `max(id) + 1, max(id) + 2, ...` (with `_INIT_SEQ`
-            as the floor for empty tables) so that the DAO contract matches the
+            IDs internally via `max(id) + 1, max(id) + 2, ...` (starting from
+            `_INIT_SEQ` for empty tables) so that the DAO contract matches the
             SQLite DAO: the caller passes UserFields without IDs and receives
             the generated IDs back. The single-row `insert` is a thin wrapper
             around this method.
@@ -557,11 +573,11 @@ class UserDao:
             self._logger.error(message)
             raise Error(DbErrc.MISSING_DB.value, message)
 
-        # Generate sequential IDs starting from max(id) + 1 (or _INIT_SEQ + 1 for empty tables).
+        # Generate sequential IDs starting from max(id) + 1 (or _INIT_SEQ for empty tables).
         max_id_script = f'select max(id) as max_id from loadTable("dfs://{self._config["db_path"]}", "{self._TABLE_NAME}")'
         max_rows = await self._db.exec(max_id_script)
         val = max_rows.iloc[0]["max_id"] if (max_rows is not None and not max_rows.empty) else None
-        base_id = self._INIT_SEQ if (val is None or pd.isna(val)) else int(val)
+        base_id = self._INIT_SEQ - 1 if (val is None or pd.isna(val)) else int(val)
 
         ids = [base_id + i for i in range(1, len(user_list) + 1)]
         for item, id in zip(user_list, ids):

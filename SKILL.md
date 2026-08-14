@@ -107,14 +107,6 @@ dependencies = [
     "aiohttp>=3.9.0",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.0",
-    "ruff",
-]
-
-[tool.ruff]
-line-length = 88
 ```
 
 > **⚠️ CLI vs Web Difference**
@@ -186,6 +178,10 @@ class Errc(Enum):
     MISSING_API = 'myapp::common::015'
     MISSING_FIELD = 'myapp::common::016'
     INVALID_FIELD_TYPE = 'myapp::common::017'
+    INVALID_PAGE = 'myapp::common::018'
+    INVALID_PAGE_SIZE = 'myapp::common::019'
+    INVALID_ORDER_BY = 'myapp::common::020'
+    INVALID_ID = 'myapp::common::021'
 ```
 
 #### Shared Classes

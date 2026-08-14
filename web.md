@@ -250,7 +250,7 @@ from aiohttp import web
 from app.middleware import cors_middleware, error_middleware, logging_middleware
 
 
-def main():
+def main() -> None:
     """Main function - create application, register routes, configure dependencies"""
 
     # Load configuration file
@@ -281,7 +281,7 @@ def main():
         """Health check endpoint"""
         return web.Response(text='hello')
 
-    async def on_startup(app: web.Application):
+    async def on_startup(app: web.Application) -> None:
         """Application startup hook - only handles async resource initialization"""
         logger.info(f'ready to startup application with env={env}')
 
@@ -291,7 +291,7 @@ def main():
 
         logger.info(f'succeeded to startup application with env={env}')
 
-    async def on_cleanup(app: web.Application):
+    async def on_cleanup(app: web.Application) -> None:
         """Application cleanup hook"""
         logger.info(f'ready to cleanup application with env={env}')
 
@@ -318,7 +318,7 @@ def main():
 
     if cors_enabled:
         app = web.Application(
-            middlewares=[logging_middleware, error_middleware, cors_middleware],
+            middlewares=[logging_middleware, cors_middleware, error_middleware],
             **app_kwargs
         )
         logger.info(f'CORS middleware enabled with env={env}')
@@ -426,7 +426,7 @@ Add after database initialization (if any), before `app = web.Application(...)`:
     cors_enabled = bool(config["web"].get("cors", False))
 
     if cors_enabled:
-        app = web.Application(middlewares=[logging_middleware, error_middleware, cors_middleware])
+        app = web.Application(middlewares=[logging_middleware, cors_middleware, error_middleware])
         # ...
 ```
 
@@ -458,7 +458,7 @@ Add feature routes after existing route registrations:
 If the feature needs to initialize data tables at startup, add to the `on_startup` function:
 
 ```python
-    async def on_startup(app: web.Application):
+    async def on_startup(app: web.Application) -> None:
         """Application startup hook - only handles async resource initialization"""
         logger.info(f'ready to startup application with env={env}')
 
@@ -510,7 +510,7 @@ Add after database initialization (if any), before `app = web.Application(...)`:
 Add API session cleanup in the `on_cleanup` function:
 
 ```python
-    async def on_cleanup(app: web.Application):
+    async def on_cleanup(app: web.Application) -> None:
         """Application cleanup hook"""
         logger.info(f'ready to cleanup application with env={env}')
 

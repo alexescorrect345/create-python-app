@@ -30,7 +30,7 @@ async def find_by_id(self, request: web.Request):
     except Exception as e:
         message = f'failed to parse id with raw_id={raw_id}'
         self._logger.error(message)
-        raise Error(UserErrc.INVALID_ID.value, message) from e
+        raise Error(CommonErrc.INVALID_ID.value, message) from e
     user = await self._user_service.find_by_id(id=id)
 
 # ❌ Wrong: Variable name inconsistent with Service parameter
@@ -41,7 +41,7 @@ async def find_by_id(self, request: web.Request):
     except Exception as e:
         message = f'failed to parse id with raw_user_id={raw_user_id}'
         self._logger.error(message)
-        raise Error(UserErrc.INVALID_ID.value, message) from e
+        raise Error(CommonErrc.INVALID_ID.value, message) from e
     user = await self._user_service.find_by_id(id=user_id)  # user_id does not match Service's id parameter
 ```
 
@@ -144,7 +144,7 @@ from typing import Any, Optional
 from aiohttp import web
 
 from app.common import Errc as CommonErrc, Error, SuccessResponse
-from app.feature.user.common import Errc as UserErrc, FieldType
+from app.feature.user.common import FieldType
 from app.feature.user.service import UserService
 
 class UserHandler:
@@ -214,7 +214,7 @@ class UserHandler:
         except Exception as e:
             message = f'failed to parse id with raw_id={raw_id}'
             self._logger.error(message)
-            raise Error(UserErrc.INVALID_ID.value, message) from e
+            raise Error(CommonErrc.INVALID_ID.value, message) from e
 
         # Parse request body
         try:
@@ -251,7 +251,7 @@ class UserHandler:
         except Exception as e:
             message = f'failed to parse id with raw_id={raw_id}'
             self._logger.error(message)
-            raise Error(UserErrc.INVALID_ID.value, message) from e
+            raise Error(CommonErrc.INVALID_ID.value, message) from e
 
         # Service null check
         if self._user_service is None:
@@ -284,7 +284,7 @@ class UserHandler:
         except Exception as e:
             message = f'failed to parse id with raw_id={raw_id}'
             self._logger.error(message)
-            raise Error(UserErrc.INVALID_ID.value, message) from e
+            raise Error(CommonErrc.INVALID_ID.value, message) from e
 
         # Parse FieldType
         raw_field_type = request.query.get("field_type", 'simple').lower()

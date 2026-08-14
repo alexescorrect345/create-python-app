@@ -111,7 +111,7 @@ import tomllib
 # Optional: Only import if the user chose a database in Step 1
 # from app.db.SqliteDB import SqliteDB
 
-async def main():
+async def main() -> None:
     """Main function - create application, configure dependencies"""
 
     # Load configuration file
