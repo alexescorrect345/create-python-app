@@ -219,19 +219,19 @@ async def cors_middleware(request: web.Request, handler):
     # Handle OPTIONS preflight request
     if request.method == 'OPTIONS':
         response = web.Response(status=200)
-        response.headers["Access-Control-Allow-Origin"] = '*'
-        response.headers["Access-Control-Allow-Methods"] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
-        response.headers["Access-Control-Allow-Headers"] = 'Content-Type, Authorization'
-        response.headers["Access-Control-Max-Age"] = '86400'
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        response.headers['Access-Control-Max-Age'] = '86400'
         return response
 
     # Call next middleware or handler
     response = await handler(request)
 
     # Add CORS headers (open by default)
-    response.headers["Access-Control-Allow-Origin"] = '*'
-    response.headers["Access-Control-Allow-Methods"] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
-    response.headers["Access-Control-Allow-Headers"] = 'Content-Type, Authorization'
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
 
     return response
 ```
