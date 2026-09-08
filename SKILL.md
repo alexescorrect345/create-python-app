@@ -342,7 +342,7 @@ from typing import Any
 class Errc(Enum):
     """API error code enum"""
     UNKNOWN_ERROR = 'myapp::api::000'
-    SESSION_NOT_FOUND = 'myapp::api::001'
+    MISSING_SESSION = 'myapp::api::001'
     API_REQUEST_FAILED = 'myapp::api::002'
 
 
@@ -430,7 +430,7 @@ class InternalApi:
         if not self._session:
             message = f'failed to find session with base_url={self._api_config["base_url"]}'
             self._logger.error(message)
-            raise Error(ApiErrc.SESSION_NOT_FOUND.value, message)
+            raise Error(ApiErrc.MISSING_SESSION.value, message)
 
         base_url = self._api_config["base_url"].rstrip('/')
         full_url = f'{base_url}{url}'
@@ -557,7 +557,7 @@ class InternalApi:
         if not self._session:
             message = f'failed to find session with base_url={self._api_config["base_url"]}'
             self._logger.error(message)
-            raise Error(ApiErrc.SESSION_NOT_FOUND.value, message)
+            raise Error(ApiErrc.MISSING_SESSION.value, message)
 
         base_url = self._api_config["base_url"].rstrip('/')
         full_url = f'{base_url}{url}'
@@ -651,7 +651,7 @@ class ExternalApi:
         if not self._session:
             message = f'failed to find session with full_url={full_url}'
             self._logger.error(message)
-            raise Error(ApiErrc.SESSION_NOT_FOUND.value, message)
+            raise Error(ApiErrc.MISSING_SESSION.value, message)
 
         verb = method.lower()
         start_time = time.perf_counter()
@@ -771,7 +771,7 @@ class ExternalApi:
         if not self._session:
             message = f'failed to find session with full_url={full_url}'
             self._logger.error(message)
-            raise Error(ApiErrc.SESSION_NOT_FOUND.value, message)
+            raise Error(ApiErrc.MISSING_SESSION.value, message)
 
         start_time = time.perf_counter()
         safe_headers = sanitize_headers(headers)
