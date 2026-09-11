@@ -14,7 +14,9 @@
 ### Complete Field Template
 
 ```python
-from typing import Any, Optional
+from __future__ import annotations
+
+from typing import Any
 from dataclasses import dataclass
 
 @dataclass
@@ -25,7 +27,7 @@ class RoleField:
         id: Role ID
         name: Role name
     """
-    id: Optional[int] = None
+    id: int | None = None
     name: str = ''
 
     def to_dict(self) -> dict[str, Any]:
@@ -40,7 +42,7 @@ class RoleField:
         }
 
     @classmethod
-    def from_dict(cls, role_dict: dict) -> Optional['RoleField']:
+    def from_dict(cls, role_dict: dict[str, Any] | None) -> RoleField | None:
         """Create object from dictionary
 
         Args:
@@ -53,7 +55,7 @@ class RoleField:
             return None
         return cls(**role_dict)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Convert to string
 
         Returns:
@@ -73,11 +75,11 @@ class UserField:
         password: Password
         role: Role object (optional, for FULL query mode)
     """
-    id: Optional[int] = None
+    id: int | None = None
     role_id: int = 0
     username: str = ''
     password: str = ''
-    role: Optional[RoleField] = None
+    role: RoleField | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary
@@ -96,7 +98,7 @@ class UserField:
         return result
 
     @classmethod
-    def from_dict(cls, user_dict: dict) -> Optional['UserField']:
+    def from_dict(cls, user_dict: dict[str, Any] | None) -> UserField | None:
         """Create object from dictionary
 
         Args:
@@ -111,7 +113,7 @@ class UserField:
             user_dict["role"] = RoleField.from_dict(user_dict["role"])
         return cls(**user_dict)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Convert to string
 
         Returns:

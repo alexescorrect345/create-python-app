@@ -10,7 +10,7 @@
 
 ```python
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 from pathlib import Path
 
 import aiosqlite
@@ -38,7 +38,7 @@ class SqliteDB(DB):
 
     _logger = logging.getLogger(__name__)
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: dict[str, Any]) -> None:
         """Initialize SQLite database connection
 
         Args:
@@ -125,16 +125,15 @@ class SqliteDB(DB):
                 self._logger.error(message)
                 raise Error(DbErrc.FAILED_TO_DISCONNECT.value, message) from e
 
-            finally:
-                self._connection = None
+            self._connection = None
         else:
             self._logger.info(f'succeeded to close sqlite database connection with db_path={self._config["db_path"]}')
 
     async def exec(
         self,
         script: str,
-        params: Optional[Tuple[Any, ...]] = None
-    ) -> Optional[List[Tuple[Any, ...]]]:
+        params: tuple[Any, ...] | None = None
+    ) -> list[tuple[Any, ...]] | None:
         """Async execute script
 
         Supported operations:
@@ -165,7 +164,7 @@ class SqliteDB(DB):
             self._logger.error(message)
             raise Error(DbErrc.NOT_CONNECTED.value, message)
 
-        cursor: Optional[aiosqlite.Cursor] = None
+        cursor: aiosqlite.Cursor | None = None
 
         try:
             cursor = await self._connection.cursor()
@@ -199,9 +198,9 @@ class SqliteDB(DB):
 
     async def batch_exec(
         self,
-        scripts: List[str],
-        params_list: List[Optional[Tuple[Any, ...]]] = []
-    ) -> List[List[Tuple[Any, ...]]]:
+        scripts: list[str],
+        params_list: list[tuple[Any, ...] | None] | None = None
+    ) -> list[list[tuple[Any, ...]]]:
         """Async batch execute multiple scripts
 
         Supported operations:
@@ -222,6 +221,7 @@ class SqliteDB(DB):
                 - Not connected: DbErrc.NOT_CONNECTED
                 - Execution failed: DbErrc.FAILED_TO_EXEC
         """
+        params_list = params_list or []
         if not scripts:
             message = f'missing scripts with db_path={self._config["db_path"]}'
             self._logger.error(message)
@@ -232,8 +232,8 @@ class SqliteDB(DB):
             self._logger.error(message)
             raise Error(DbErrc.NOT_CONNECTED.value, message)
 
-        cursor: Optional[aiosqlite.Cursor] = None
-        result_list: List[List[Tuple[Any, ...]]] = []
+        cursor: aiosqlite.Cursor | None = None
+        result_list: list[list[tuple[Any, ...]]] = []
 
         try:
             cursor = await self._connection.cursor()
@@ -278,8 +278,8 @@ class SqliteDB(DB):
         self,
         cursor: aiosqlite.Cursor,
         script: str,
-        params: Optional[Tuple[Any, ...]] = None
-    ) -> Optional[List[Tuple[Any, ...]]]:
+        params: tuple[Any, ...] | None = None
+    ) -> list[tuple[Any, ...]] | None:
         """Execute a single script on the given cursor (no transaction management).
 
         Args:

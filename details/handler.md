@@ -139,7 +139,7 @@ user_handler.register_routes(app)
 ```python
 import sys
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from aiohttp import web
 
@@ -152,14 +152,14 @@ class UserHandler:
 
     _logger = logging.getLogger(__name__)
 
-    def __init__(self, config: dict[str, Any]):
+    def __init__(self, config: dict[str, Any]) -> None:
         """Initialize
 
         Args:
             config: Configuration dictionary
         """
         self._config = config
-        self._user_service: Optional[UserService] = None
+        self._user_service: UserService | None = None
 
     def set_user_service(self, user_service: UserService) -> None:
         """Set user service
@@ -346,7 +346,7 @@ class UserHandler:
 
         # Parse orderby (e.g. ?orderby=id:desc,username:asc)
         raw_orderby = request.query.get("orderby")
-        orderby: Optional[list[tuple[str, str]]] = None
+        orderby: list[tuple[str, str]] | None = None
         if raw_orderby is not None:
             orderby = []
             for part in raw_orderby.split(','):
@@ -356,14 +356,14 @@ class UserHandler:
                 if ':' not in item:
                     message = f'invalid orderby item with value={item}'
                     self._logger.error(message)
-                    raise Error(CommonErrc.INVALID_ORDER_BY.value, message)
+                    raise Error(CommonErrc.INVALID_ORDERBY.value, message)
                 field, direction = item.split(':', 1)
                 field = field.strip()
                 direction = direction.strip().lower()
                 if not field or direction not in ('asc', 'desc'):
                     message = f'invalid orderby item with value={item}'
                     self._logger.error(message)
-                    raise Error(CommonErrc.INVALID_ORDER_BY.value, message)
+                    raise Error(CommonErrc.INVALID_ORDERBY.value, message)
                 orderby.append((field, direction))
             if not orderby:
                 orderby = None
@@ -393,6 +393,15 @@ class UserHandler:
 
         page = 1 if page is None else page
         page_size = sys.maxsize if page_size is None else page_size
+
+        if page < 1:
+            message = f'invalid page with page={page}'
+            self._logger.error(message)
+            raise Error(CommonErrc.INVALID_PAGE.value, message)
+        if page_size < 1:
+            message = f'invalid page_size with page_size={page_size}'
+            self._logger.error(message)
+            raise Error(CommonErrc.INVALID_PAGE_SIZE.value, message)
 
         # Service null check
         if self._user_service is None:

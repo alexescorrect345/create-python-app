@@ -77,14 +77,30 @@ host = "0.0.0.0"  # Listen address, 0.0.0.0 means accept connections from all so
 port = 4002  # Listen port
 body_limit = 10485760  # Request body size limit (bytes)
 cors = true  # Whether to enable CORS cross-origin support
+```
 
 Only add the following database configuration if the user chose a database in Step 1:
 
 ```toml
 # Database configuration
 [service.db.sqlitedb]
-path = "./data/main.db"  # SQLite database file path
+db_path = "./data/main.db"  # SQLite database file path
 timeout_s = 5.0  # Database operation timeout (seconds)
+```
+
+Or add the following database configuration if the user chose DolphinDB in Step 1:
+
+```toml
+# Database configuration
+[service.db.dolphindb]
+db_path = "myapp"
+host = "localhost"
+port = 8848
+userid = "admin"
+password = "123456"
+reconnect_count = 0
+read_timeout_s = 5
+write_timeout_s = 5
 ```
 
 #### config/config.prd.toml
@@ -107,8 +123,23 @@ Only add the following database configuration if the user chose a database in St
 ```toml
 # Database configuration
 [service.db.sqlitedb]
-path = "./data/main.db"  # SQLite database file path
+db_path = "./data/main.db"  # SQLite database file path
 timeout_s = 30.0  # Database operation timeout (seconds)
+```
+
+Or add the following database configuration if the user chose DolphinDB in Step 1:
+
+```toml
+# Database configuration
+[service.db.dolphindb]
+db_path = "myapp"
+host = "localhost"
+port = 8848
+userid = "admin"
+password = "123456"
+reconnect_count = 0
+read_timeout_s = 30
+write_timeout_s = 30
 ```
 
 ### Step 5: app/common.py Errc Enum (Web)
@@ -122,6 +153,7 @@ Create `app/middleware.py` with the following content:
 ```python
 import time
 import logging
+from collections.abc import Awaitable, Callable
 
 from aiohttp import web
 
@@ -131,7 +163,10 @@ logger = logging.getLogger(__name__)
 
 
 @web.middleware
-async def error_middleware(request: web.Request, handler):
+async def error_middleware(
+    request: web.Request,
+    handler: Callable[[web.Request], Awaitable[web.StreamResponse]],
+) -> web.StreamResponse:
     """Error handling middleware
 
     Args:
@@ -176,7 +211,10 @@ async def error_middleware(request: web.Request, handler):
 
 
 @web.middleware
-async def logging_middleware(request: web.Request, handler):
+async def logging_middleware(
+    request: web.Request,
+    handler: Callable[[web.Request], Awaitable[web.StreamResponse]],
+) -> web.StreamResponse:
     """Logging middleware
 
     Args:
@@ -206,7 +244,10 @@ async def logging_middleware(request: web.Request, handler):
 
 
 @web.middleware
-async def cors_middleware(request: web.Request, handler):
+async def cors_middleware(
+    request: web.Request,
+    handler: Callable[[web.Request], Awaitable[web.StreamResponse]],
+) -> web.StreamResponse:
     """CORS middleware (open by default)
 
     Args:
@@ -303,9 +344,9 @@ def main() -> None:
 
     # Optional: Database initialization (only if user chose a database in Step 1)
     # db_config = {
-    #     "path": config["service"]["db"]["sqlitedb"]["path"],
+    #     "db_path": config["service"]["db"]["sqlitedb"]["db_path"],
     #     "check_same_thread": True,
-    #     "timeout": config["service"]["db"]["sqlitedb"]["timeout_s"],
+    #     "timeout_s": config["service"]["db"]["sqlitedb"]["timeout_s"],
     #     "isolation_level": None
     # }
     # sqlite_db = SqliteDB(config=db_config)
@@ -405,16 +446,18 @@ Add after database initialization (if any), before `app = web.Application(...)`:
 ```python
     # Optional: Database initialization (only if user chose a database in Step 1)
     # db_config = {
-    #     "path": config["service"]["db"]["sqlitedb"]["path"],
+    #     "db_path": config["service"]["db"]["sqlitedb"]["db_path"],
     #     "check_same_thread": True,
-    #     "timeout": config["service"]["db"]["sqlitedb"]["timeout_s"],
+    #     "timeout_s": config["service"]["db"]["sqlitedb"]["timeout_s"],
     #     "isolation_level": None
     # }
     # sqlite_db = SqliteDB(config=db_config)
 
     # === Initialize user feature ===
     # Optional: Only when database is needed
-    # user_dao = UserDao(config=config)
+    # db_config = config["service"]["db"]["sqlitedb"]   # SQLite
+    # db_config = config["service"]["db"]["dolphindb"]  # DolphinDB
+    # user_dao = UserDao(config=db_config)
     # user_dao.set_db(db=sqlite_db)
 
     user_service = UserService(config=config)
@@ -500,12 +543,21 @@ Add after database initialization (if any), before `app = web.Application(...)`:
     # sqlite_db = SqliteDB(config=db_config)
 
     # === Initialize API client ===
-    {name}_api = {Name}Api(config=config)
+    {name}_api = {Name}Api(api_config=config["service"]["api"]["{name}"])
 
     cors_enabled = bool(config["web"].get("cors", False))
 ```
 
-#### 3. Lifecycle Hooks (inside on_cleanup function)
+#### 3. Lifecycle Hooks (inside on_startup and on_cleanup functions)
+
+Add API session initialization in the `on_startup` function, after the API client has been stored in the `app` dictionary:
+
+```python
+        # === Initialize API session ===
+        {name}_api = app.get("{name}_api")
+        if {name}_api:
+            {name}_api.init()
+```
 
 Add API session cleanup in the `on_cleanup` function:
 

@@ -13,7 +13,7 @@ Database is optional for CLI programs. Ask the user:
 > - **SQLite**: Lightweight embedded database, suitable for small projects and rapid prototyping
 > - **DolphinDB**: High-performance time-series database, suitable for big data analytics and time-series data processing
 
-If the user chooses **None**, skip all database-related steps (Step 8, Step 9, database-related configuration, etc.).
+If the user chooses **None**, skip Step 9 and database-related configuration.
 
 ### Step 2: Directory Structure (CLI)
 
@@ -73,8 +73,23 @@ Only add the following database configuration if the user chose a database in St
 ```toml
 # Database configuration
 [service.db.sqlitedb]
-path = "./data/main.db"  # SQLite database file path
+db_path = "./data/main.db"  # SQLite database file path
 timeout_s = 5.0  # Database operation timeout (seconds)
+```
+
+Or add the following database configuration if the user chose DolphinDB in Step 1:
+
+```toml
+# Database configuration
+[service.db.dolphindb]
+db_path = "myapp"
+host = "localhost"
+port = 8848
+userid = "admin"
+password = "123456"
+reconnect_count = 0
+read_timeout_s = 5
+write_timeout_s = 5
 ```
 
 #### config/config.prd.toml
@@ -90,8 +105,23 @@ Only add the following database configuration if the user chose a database in St
 ```toml
 # Database configuration
 [service.db.sqlitedb]
-path = "./data/main.db"  # SQLite database file path
+db_path = "./data/main.db"  # SQLite database file path
 timeout_s = 30.0  # Database operation timeout (seconds)
+```
+
+Or add the following database configuration if the user chose DolphinDB in Step 1:
+
+```toml
+# Database configuration
+[service.db.dolphindb]
+db_path = "myapp"
+host = "localhost"
+port = 8848
+userid = "admin"
+password = "123456"
+reconnect_count = 0
+read_timeout_s = 30
+write_timeout_s = 30
 ```
 
 ### Step 5: app/common.py Errc Enum (CLI)
@@ -107,6 +137,8 @@ import os
 import asyncio
 import logging
 import tomllib
+
+from app.common import Error
 
 # Optional: Only import if the user chose a database in Step 1
 # from app.db.SqliteDB import SqliteDB
@@ -136,9 +168,9 @@ async def main() -> None:
 
         # Optional: Database initialization (only if user chose a database in Step 1)
         # db_config = {
-        #     "path": config["service"]["db"]["sqlitedb"]["path"],
+        #     "db_path": config["service"]["db"]["sqlitedb"]["db_path"],
         #     "check_same_thread": True,
-        #     "timeout": config["service"]["db"]["sqlitedb"]["timeout_s"],
+        #     "timeout_s": config["service"]["db"]["sqlitedb"]["timeout_s"],
         #     "isolation_level": None
         # }
         # sqlite_db = SqliteDB(config=db_config)
@@ -151,6 +183,10 @@ async def main() -> None:
 
     except Exception as e:
         logger.exception(f'failed to run application with env={env}')
+
+    finally:
+        # Optional: Close database connection (only if user chose a database in Step 1)
+        # await sqlite_db.close()
 
 
 if __name__ == '__main__':
@@ -188,7 +224,8 @@ Add after `logger = logging.getLogger(__name__)`:
 
 ```python
     # === Initialize API client ===
-    {name}_api = {Name}Api(config=config)
+    {name}_api = {Name}Api(api_config=config["service"]["api"]["{name}"])
+    {name}_api.init()
 
     # Optional: Database initialization (only if user chose a database in Step 1)
     # sqlite_db = SqliteDB(config=db_config)
@@ -197,7 +234,16 @@ Add after `logger = logging.getLogger(__name__)`:
     logger.info('application started')
 ```
 
-#### 3: Use in Service (optional)
+#### 3. Cleanup Section (inside the finally block)
+
+Add API session cleanup to the `finally` block:
+
+```python
+        # === Close API client ===
+        await {name}_api.close()
+```
+
+#### 4. Use in Service (optional)
 
 If the API client needs to be used by a feature's service, inject it during feature initialization:
 

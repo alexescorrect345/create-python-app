@@ -117,7 +117,7 @@ user_dao.set_db(db=db)
 ```python
 import sys
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from app.common import Error, Pagination
 from app.db import DB
@@ -131,15 +131,20 @@ class UserDao:
     _logger = logging.getLogger(__name__)
     _TABLE_NAME = 't_user'
     _INIT_SEQ = 1000000
+    _ORDER_FIELD_MAP = {
+        'id': 'id',
+        'username': 'username',
+        'role_id': 'role_id',
+    }
 
-    def __init__(self, config: dict):
+    def __init__(self, config: dict[str, Any]) -> None:
         """Initialize
 
         Args:
             config: Configuration dictionary
         """
         self._config = config
-        self._db: Optional[DB] = None
+        self._db: DB | None = None
 
     def set_db(self, db: DB) -> None:
         """Set database instance
@@ -284,7 +289,7 @@ class UserDao:
         await self._db.exec(script=script, params=(id,))
         self._logger.debug(f'succeeded to delete user with id={id}')
 
-    async def find_by_id(self, id: Any, field_type: FieldType = FieldType.SIMPLE) -> Optional[UserField]:
+    async def find_by_id(self, id: Any, field_type: FieldType = FieldType.SIMPLE) -> UserField | None:
         """Find user by ID
 
         Args:
@@ -323,8 +328,8 @@ class UserDao:
 
     async def find(
         self,
-        params: Optional[dict[str, Any]] = None,
-        orderby: Optional[list[tuple[str, str]]] = None,
+        params: dict[str, Any] | None = None,
+        orderby: list[tuple[str, str]] | None = None,
         field_type: FieldType = FieldType.SIMPLE,
         page: int = 1,
         page_size: int = sys.maxsize,
@@ -376,7 +381,11 @@ class UserDao:
                 message = f'invalid order direction with field={field}, direction={direction}'
                 self._logger.error(message)
                 raise Error(DbErrc.INVALID_ORDERBY.value, message)
-            order_parts.append(f'u.{field} {direction.upper()}')
+            if field not in self._ORDER_FIELD_MAP:
+                message = f'invalid order field with field={field}'
+                self._logger.error(message)
+                raise Error(DbErrc.INVALID_ORDERBY.value, message)
+            order_parts.append(f'u.{self._ORDER_FIELD_MAP[field]} {direction.upper()}')
 
         order_clause = 'ORDER BY ' + ', '.join(order_parts)
 
@@ -453,7 +462,7 @@ class UserDao:
 ```python
 import sys
 import logging
-from typing import Any, Optional, Union
+from typing import Any
 
 import pandas as pd
 
@@ -470,15 +479,20 @@ class UserDao:
     _logger = logging.getLogger(__name__)
     _TABLE_NAME = 't_user'
     _INIT_SEQ = 1000000
+    _ORDER_FIELD_MAP = {
+        'id': 'id',
+        'username': 'username',
+        'role_id': 'role_id',
+    }
 
-    def __init__(self, config: dict):
+    def __init__(self, config: dict[str, Any]) -> None:
         """Initialize
 
         Args:
             config: Configuration dictionary
         """
         self._config = config
-        self._db: Optional[DB] = None
+        self._db: DB | None = None
 
     def set_db(self, db: DB) -> None:
         """Set database instance
@@ -590,7 +604,7 @@ class UserDao:
         self._logger.debug(f'succeeded to insert user with ids={ids}, user_count={len(user_list)}')
         return ids
 
-    async def upsert(self, user_field: Union[UserField, list[UserField]]) -> None:
+    async def upsert(self, user_field: UserField | list[UserField]) -> None:
         """Upsert user
 
         Note:
@@ -681,7 +695,7 @@ class UserDao:
         await self._db.exec(script)
         self._logger.debug(f'succeeded to delete user with id={id}')
 
-    async def find_by_id(self, id: Any, field_type: FieldType = FieldType.SIMPLE) -> Optional[UserField]:
+    async def find_by_id(self, id: Any, field_type: FieldType = FieldType.SIMPLE) -> UserField | None:
         """Find user by ID
 
         Args:
@@ -718,8 +732,8 @@ class UserDao:
 
     async def find(
         self,
-        params: Optional[dict[str, Any]] = None,
-        orderby: Optional[list[tuple[str, str]]] = None,
+        params: dict[str, Any] | None = None,
+        orderby: list[tuple[str, str]] | None = None,
         field_type: FieldType = FieldType.SIMPLE,
         page: int = 1,
         page_size: int = sys.maxsize,
@@ -765,7 +779,11 @@ class UserDao:
                 message = f'invalid order direction with field={field}, direction={direction}'
                 self._logger.error(message)
                 raise Error(DbErrc.INVALID_ORDERBY.value, message)
-            order_parts.append(f'{field} {direction}')
+            if field not in self._ORDER_FIELD_MAP:
+                message = f'invalid order field with field={field}'
+                self._logger.error(message)
+                raise Error(DbErrc.INVALID_ORDERBY.value, message)
+            order_parts.append(f'{self._ORDER_FIELD_MAP[field]} {direction}')
 
         order_clause = 'order by ' + ', '.join(order_parts)
 

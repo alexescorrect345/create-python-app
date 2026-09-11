@@ -4,15 +4,19 @@
 
 `app/feature/user/service.py`
 
-> **⚠️ Multiple Independent Services**
+> **⚠️ Service File Layout**
 >
-> When a feature contains multiple independent services, each handling a distinct data source or processing pipeline with complex logic (e.g., different replay sources for an ASR feature), splitting them into separate files is permitted:
+> - When a feature contains one service class, place it in `service.py` regardless of its code size.
+> - When a feature contains multiple service classes and each service class has a small amount of code, the classes may be grouped in `service.py`.
+> - When multiple service classes are numerous or any service class contains a substantial amount of code, each service class must be placed in its own file, with the file name matching the class name, such as `UserService.py` (e.g., `BvReplayService.py`, `ArchiveReplayService.py`).
+> - Each split file should contain one primary Service class.
+> - Update `app/feature/{name}/__init__.py` to export all Service classes.
+
+> **⚠️ No-Database Projects**
 >
-> - Name each file after its Service class: `{Name}Service.py` (e.g., `BvReplayService.py`, `ArchiveReplayService.py`)
-> - Each file should contain one primary Service class
-> - Update `app/feature/{name}/__init__.py` to export all Service classes
->
-> This approach keeps each file focused and avoids an oversized `service.py`. Use this exception judiciously — if services share significant logic, prefer a single `service.py`.
+> When no database is configured, omit the DAO import, the `_user_dao` member,
+> the `set_user_dao` setter, and all DAO null checks.
+> The Service works directly with its data source.
 
 ### Service Layer Responsibilities
 
@@ -106,7 +110,7 @@ user_service.set_user_dao(user_dao=user_dao)
 ```python
 import sys
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from app.common import Errc as CommonErrc, Error, Pagination
 from app.feature.user.common import Errc as UserErrc, FieldType
@@ -118,14 +122,14 @@ class UserService:
 
     _logger = logging.getLogger(__name__)
 
-    def __init__(self, config: dict[str, Any]):
+    def __init__(self, config: dict[str, Any]) -> None:
         """Initialize
 
         Args:
             config: Configuration dictionary
         """
         self._config = config
-        self._user_dao: Optional[UserDao] = None
+        self._user_dao: UserDao | None = None
 
     def set_user_dao(self, user_dao: UserDao) -> None:
         """Set user data access object
@@ -285,7 +289,7 @@ class UserService:
         await self._user_dao.delete_by_id(id)
         self._logger.info(f'succeeded to delete user with id={id}')
 
-    async def find_by_id(self, id: int, field_type: FieldType = FieldType.SIMPLE) -> Optional[UserField]:
+    async def find_by_id(self, id: int, field_type: FieldType = FieldType.SIMPLE) -> UserField | None:
         """Find user by ID
 
         Args:
@@ -309,7 +313,7 @@ class UserService:
     async def find(
         self,
         payload: dict[str, Any],
-        orderby: Optional[list[tuple[str, str]]] = None,
+        orderby: list[tuple[str, str]] | None = None,
         field_type: FieldType = FieldType.SIMPLE,
         page: int = 1,
         page_size: int = sys.maxsize

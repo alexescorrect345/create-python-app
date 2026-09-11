@@ -61,7 +61,12 @@ async def _run_once(self):
 
 **Notes**:
 - It is recommended to place `asyncio.sleep()` in the `finally` block to ensure proper interval even when exceptions occur
-- The interval time should be read from configuration for easy environment adjustment
+- The interval time should be read from configuration for easy environment adjustment, for example:
+
+```toml
+# config/config.dev.toml
+task_interval_s = 60
+```
 
 ### Dependency Injection Pattern
 
@@ -71,8 +76,7 @@ Task uses **Setter Injection** pattern for dependency injection:
    - `__init__(config)` - Inject configuration dictionary
 
 2. **Setter method injection for optional dependencies**:
-   - `set_user_service(service)` - Inject user service
-   - Supports chaining: `task.set_xxx_service(...).set_yyy_service(...)`
+    - `set_user_service(service)` - Inject user service
 
 3. **Lazy initialization**:
    - Task can be created first, dependencies injected later
@@ -87,14 +91,19 @@ from app.feature.user.task import UserTask
 
 # Initialize in main.py (optional)
 # If no background task is needed, initialization can be skipped
-task = UserTask(config=config)
-task.set_user_service(service=user_service)
-await task.init()
-# Use create_task to start asynchronously, without blocking the startup flow
-asyncio.create_task(task.run_in_loop())
+user_task = UserTask(config=config)
+user_task.set_user_service(service=user_service)
+await user_task.init()
+# Keep the handle so the loop can be cancelled on shutdown
+task_handle = asyncio.create_task(user_task.run_in_loop())
 
 # Clean up task when application shuts down
-await task.close()  # Sets self._running = False, allowing the task loop to exit
+await user_task.close()  # Sets self._running = False, allowing the task loop to exit
+task_handle.cancel()
+try:
+    await task_handle
+except asyncio.CancelledError:
+    pass
 ```
 
 ### Complete Task Template
@@ -102,6 +111,7 @@ await task.close()  # Sets self._running = False, allowing the task loop to exit
 ```python
 import asyncio
 import logging
+from typing import Any
 
 from app.common import Errc as CommonErrc, Error
 from app.task import Task
@@ -113,7 +123,7 @@ class UserTask(Task):
     """User background task"""
     _logger = logging.getLogger(__name__)
 
-    def __init__(self, config: dict):
+    def __init__(self, config: dict[str, Any]) -> None:
         """Initialize
 
         Args:

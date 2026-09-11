@@ -11,7 +11,7 @@
 ```python
 import asyncio
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import dolphindb as ddb
 
@@ -86,7 +86,7 @@ class DolphinDB(DB):
         cls._logger.error(message)
         raise Error(DbErrc.INVALID_VALUE_TYPE.value, message)
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: dict[str, Any]) -> None:
         """Initialize DolphinDB database connection
 
         Args:
@@ -181,15 +181,14 @@ class DolphinDB(DB):
                 self._logger.error(message)
                 raise Error(DbErrc.FAILED_TO_DISCONNECT.value, message) from e
 
-            finally:
-                self._connection = None
+            self._connection = None
         else:
             self._logger.info(f'succeeded to close dolphindb database connection with host={self._config["host"]}, port={self._config["port"]}, userid={self._config["userid"]}')
 
     async def exec(
         self,
         script: str,
-        params: Optional[Tuple[Any, ...]] = None
+        params: tuple[Any, ...] | None = None
     ) -> Any:
         """Async execute script
 
@@ -225,9 +224,9 @@ class DolphinDB(DB):
 
     async def batch_exec(
         self,
-        scripts: List[str],
-        params_list: List[Optional[Tuple[Any, ...]]] = []
-    ) -> List[Any]:
+        scripts: list[str],
+        params_list: list[tuple[Any, ...] | None] | None = None
+    ) -> list[Any]:
         """Async batch execute multiple scripts
 
         Supported operations:
@@ -246,12 +245,13 @@ class DolphinDB(DB):
                 - Empty scripts: DbErrc.MISSING_SCRIPT
                 - Execution failed: DbErrc.FAILED_TO_EXEC
         """
+        params_list = params_list or []
         if not scripts:
             message = f'missing scripts with host={self._config["host"]}, port={self._config["port"]}, userid={self._config["userid"]}'
             self._logger.error(message)
             raise Error(DbErrc.MISSING_SCRIPT.value, message)
 
-        result_list: List[Any] = []
+        result_list: list[Any] = []
 
         try:
             script_count = len(scripts)
@@ -274,7 +274,7 @@ class DolphinDB(DB):
     async def _exec_once(
         self,
         script: str,
-        params: Optional[Tuple[Any, ...]] = None
+        params: tuple[Any, ...] | None = None
     ) -> Any:
         """Execute a single DolphinDB script on the current session (no connection/empty validation, no transaction management).
 

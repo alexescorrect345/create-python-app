@@ -32,6 +32,7 @@
 - Return raw JSON (parsed via `response.read()` + `json.loads()`); return `None` for empty bodies (e.g. 204 No Content)
 - Need to check HTTP status code
 - Caller parses the response structure on their own
+- Because an empty body returns `None`, callers must check the response before accessing its fields.
 
 ### Rules
 
@@ -83,7 +84,7 @@ Where `{name}` comes from the `{name}Api.py` filename.
 All InternalApi subclasses inherit from `app.api.api.InternalApi` base class. Subclasses only need to implement business methods by calling `self._get()`, `self._post()`, `self._put()`, `self._delete()`.
 
 ```python
-from typing import Any, Dict, Optional
+from typing import Any
 
 from app.common import SuccessResponse
 from app.api.api import InternalApi
@@ -120,7 +121,7 @@ class UserApi(InternalApi):
             "password": password
         })
 
-    async def update_user_by_id(self, id: int, params: Dict[str, Any]) -> SuccessResponse:
+    async def update_user_by_id(self, id: int, params: dict[str, Any]) -> SuccessResponse:
         """Update user by ID
 
         Args:
@@ -163,11 +164,11 @@ class UserApi(InternalApi):
 
     async def find_user(
         self,
-        params: Dict[str, Any],
-        orderby: Optional[str] = None,
-        field_type: Optional[str] = None,
-        page: Optional[int] = None,
-        page_size: Optional[int] = None
+        params: dict[str, Any],
+        orderby: str | None = None,
+        field_type: str | None = None,
+        page: int | None = None,
+        page_size: int | None = None
     ) -> SuccessResponse:
         """Find user list
 
@@ -203,7 +204,7 @@ class UserApi(InternalApi):
 All ExternalApi subclasses inherit from `app.api.api.ExternalApi` base class. Subclasses only need to implement business methods by calling `self._get()`, `self._post()`, `self._put()`, `self._delete()`.
 
 ```python
-from typing import Any, Dict
+from typing import Any
 
 from app.api.api import ExternalApi
 
@@ -217,8 +218,8 @@ class MyExternalApi(ExternalApi):
 
     async def fetch(
         self,
-        params: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        params: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Query
 
         Args:

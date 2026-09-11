@@ -60,12 +60,16 @@ When creating a project or feature, provide:
 
 Ask user to determine project type and database type:
 
+> "What type of application is this?"
+> - **CLI**: Command-line program, no HTTP service
+> - **Web**: Web service, provides HTTP API
+
 > "Does this project need a database?"
 > - **None**: No database needed
 > - **SQLite**: Lightweight embedded database, suitable for small projects and rapid prototyping
 > - **DolphinDB**: High-performance time-series database, suitable for big data analytics and time-series data processing
 
-If the user chooses **None**, skip all database-related steps (Step 8, Step 9, database-related configuration, etc.).
+If the user chooses **None**, skip Step 9 and database-related configuration.
 
 ### Step 2: Create Directory Structure
 
@@ -107,6 +111,8 @@ dependencies = [
     "aiohttp>=3.9.0",
 ]
 
+[tool.poetry]
+package-mode = false
 ```
 
 > **⚠️ CLI vs Web Difference**
@@ -148,6 +154,9 @@ main = "DEBUG"  # config.dev.toml, supports DEBUG, INFO, WARNING, ERROR, CRITICA
 #### Errc Enum
 
 ```python
+from enum import Enum
+
+
 class Errc(Enum):
     """Common error code enum"""
 
@@ -180,14 +189,13 @@ class Errc(Enum):
     INVALID_FIELD_TYPE = 'myapp::common::017'
     INVALID_PAGE = 'myapp::common::018'
     INVALID_PAGE_SIZE = 'myapp::common::019'
-    INVALID_ORDER_BY = 'myapp::common::020'
+    INVALID_ORDERBY = 'myapp::common::020'
     INVALID_ID = 'myapp::common::021'
 ```
 
 #### Shared Classes
 
 ```python
-from enum import Enum
 from typing import Any
 from datetime import datetime, timezone
 from dataclasses import dataclass, field, asdict
@@ -196,7 +204,7 @@ from dataclasses import dataclass, field, asdict
 class Error(Exception):
     """Business error exception class"""
 
-    def __init__(self, code: str, message: str):
+    def __init__(self, code: str, message: str) -> None:
         """Initialize error
 
         Args:
@@ -378,7 +386,7 @@ class InternalApi:
 
     _logger = logging.getLogger(__name__)
 
-    def __init__(self, api_config: dict[str, Any]):
+    def __init__(self, api_config: dict[str, Any]) -> None:
         """Initialize API client
 
         Args:
@@ -388,12 +396,14 @@ class InternalApi:
         self._api_config = api_config
         self._session = None
 
-    def init(self):
+    def init(self) -> None:
         """Initialize the session, should be called after event loop is created"""
+        if self._session is not None:
+            return
         timeout = aiohttp.ClientTimeout(total=self._api_config["timeout_s"])
         self._session = aiohttp.ClientSession(timeout=timeout)
 
-    async def close(self):
+    async def close(self) -> None:
         """Close session"""
         if self._session:
             try:
@@ -401,6 +411,8 @@ class InternalApi:
             except Exception as e:
                 message = f'failed to close session with base_url={self._api_config["base_url"]}'
                 self._logger.exception(message)
+            finally:
+                self._session = None
 
     async def _request(
         self,
@@ -600,7 +612,7 @@ class ExternalApi:
 
     _logger = logging.getLogger(__name__)
 
-    def __init__(self, api_config: dict[str, Any]):
+    def __init__(self, api_config: dict[str, Any]) -> None:
         """Initialize API client
 
         Args:
@@ -611,12 +623,14 @@ class ExternalApi:
         self._api_config = api_config
         self._session = None
 
-    def init(self):
+    def init(self) -> None:
         """Initialize the session, should be called after event loop is created"""
+        if self._session is not None:
+            return
         timeout = aiohttp.ClientTimeout(total=self._api_config["timeout_s"])
         self._session = aiohttp.ClientSession(timeout=timeout)
 
-    async def close(self):
+    async def close(self) -> None:
         """Close session"""
         if self._session:
             try:
@@ -624,6 +638,8 @@ class ExternalApi:
             except Exception as e:
                 message = f'failed to close session with class={self.__class__.__name__}'
                 self._logger.exception(message)
+            finally:
+                self._session = None
 
     async def _request(
         self,
@@ -1145,10 +1161,9 @@ Update `app/api/__init__.py` to export the newly created API client class. This 
 
 ```python
 # app/api/__init__.py
-# Add API client class exports here, e.g.:
-# from app.api.{Name}Api import {Name}Api
+from app.api.{Name}Api import {Name}Api
 
-__all__ = []
+__all__ = ['{Name}Api']
 ```
 
 **Usage Example:**

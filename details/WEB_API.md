@@ -22,7 +22,7 @@ All business endpoints (excluding the health check) return responses in the foll
 ### Error Response
 
 ```json
-{"code": '<project>::<module>::<code>', "message": '<error description>', "timestamp": 1741407495123}
+{"code": "<project>::<module>::<code>", "message": "<error description>", "timestamp": 1741407495123}
 ```
 
 | Field       | Type   | Description                                          |
@@ -55,7 +55,7 @@ Health check. Returns `hello` (text/plain).
 
 **Request Body** (if applicable):
 ```json
-{"<field>": '<type>', ...}
+{"<field>": "<type>", ...}
 ```
 
 **Success Example** (200 / 201 depending on operation):
@@ -70,8 +70,8 @@ Health check. Returns `hello` (text/plain).
 **Error Example**:
 ```json
 {
-  "code": 'project::module::code',
-  "message": 'error description',
+  "code": "project::module::code",
+  "message": "error description",
   "timestamp": 1741407495123
 }
 ```
