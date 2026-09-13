@@ -179,7 +179,7 @@ async def main() -> None:
         logger.info(f'succeeded to start application with env={env}')
 
     except Error as e:
-        logger.exception(f'failed to handle business error with code={e.code}, message={e.message}')
+        logger.exception(f'failed to handle with code={e.code}, message={e.message}')
 
     except Exception as e:
         logger.exception(f'failed to run application with env={env}')

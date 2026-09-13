@@ -179,8 +179,7 @@ async def error_middleware(
     try:
         return await handler(request)
     except Error as e:
-        # Business error
-        message = f'failed to handle business error with path={request.path}, code={e.code}, message={e.message}'
+        message = f'failed to handle with path={request.path}, code={e.code}, message={e.message}'
         logger.exception(message)
         return web.json_response(
             ErrorResponse(code=e.code, message=e.message).to_dict(),
