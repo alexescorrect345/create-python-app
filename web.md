@@ -259,19 +259,19 @@ async def cors_middleware(
     # Handle OPTIONS preflight request
     if request.method == 'OPTIONS':
         response = web.Response(status=200)
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-        response.headers['Access-Control-Max-Age'] = '86400'
+        response.headers["Access-Control-Allow-Origin"] = '*'
+        response.headers["Access-Control-Allow-Methods"] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+        response.headers["Access-Control-Allow-Headers"] = 'Content-Type, Authorization'
+        response.headers["Access-Control-Max-Age"] = '86400'
         return response
 
     # Call next middleware or handler
     response = await handler(request)
 
     # Add CORS headers (open by default)
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    response.headers["Access-Control-Allow-Origin"] = '*'
+    response.headers["Access-Control-Allow-Methods"] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+    response.headers["Access-Control-Allow-Headers"] = 'Content-Type, Authorization'
 
     return response
 ```
@@ -323,23 +323,23 @@ def main() -> None:
 
     async def on_startup(app: web.Application) -> None:
         """Application startup hook - only handles async resource initialization"""
-        logger.info(f'ready to startup application with env={env}')
+        logger.info(f'ready to startup application with env={env}, host={host}, port={port}')
 
         sqlite_db = app.get("sqlite_db")
         if sqlite_db:
             await sqlite_db.connect()
 
-        logger.info(f'succeeded to startup application with env={env}')
+        logger.info(f'succeeded to startup application with env={env}, host={host}, port={port}')
 
     async def on_cleanup(app: web.Application) -> None:
         """Application cleanup hook"""
-        logger.info(f'ready to cleanup application with env={env}')
+        logger.info(f'ready to cleanup application with env={env}, host={host}, port={port}')
 
         sqlite_db = app.get("sqlite_db")
         if sqlite_db:
             await sqlite_db.close()
 
-        logger.info(f'succeeded to cleanup application with env={env}')
+        logger.info(f'succeeded to cleanup application with env={env}, host={host}, port={port}')
 
     # Optional: Database initialization (only if user chose a database in Step 1)
     # db_config = {
@@ -361,13 +361,13 @@ def main() -> None:
             middlewares=[logging_middleware, cors_middleware, error_middleware],
             **app_kwargs
         )
-        logger.info(f'CORS middleware enabled with env={env}')
+        logger.info(f'CORS middleware enabled with env={env}, cors_enabled={cors_enabled}')
     else:
         app = web.Application(
             middlewares=[logging_middleware, error_middleware],
             **app_kwargs
         )
-        logger.info(f'CORS middleware disabled with env={env}')
+        logger.info(f'CORS middleware disabled with env={env}, cors_enabled={cors_enabled}')
 
     # Optional: Store database instance (only if user chose a database)
     # app["sqlite_db"] = sqlite_db
@@ -502,7 +502,7 @@ If the feature needs to initialize data tables at startup, add to the `on_startu
 ```python
     async def on_startup(app: web.Application) -> None:
         """Application startup hook - only handles async resource initialization"""
-        logger.info(f'ready to startup application with env={env}')
+        logger.info(f'ready to startup application with env={env}, host={host}, port={port}')
 
         sqlite_db = app.get("sqlite_db")
         if sqlite_db:
@@ -513,7 +513,7 @@ If the feature needs to initialize data tables at startup, add to the `on_startu
         # if user_dao:
         #     await user_dao.init_table()
 
-        logger.info(f'succeeded to startup application with env={env}')
+        logger.info(f'succeeded to startup application with env={env}, host={host}, port={port}')
 ```
 
 ---
@@ -563,7 +563,7 @@ Add API session cleanup in the `on_cleanup` function:
 ```python
     async def on_cleanup(app: web.Application) -> None:
         """Application cleanup hook"""
-        logger.info(f'ready to cleanup application with env={env}')
+        logger.info(f'ready to cleanup application with env={env}, host={host}, port={port}')
 
         sqlite_db = app.get("sqlite_db")
         if sqlite_db:
@@ -574,7 +574,7 @@ Add API session cleanup in the `on_cleanup` function:
         if {name}_api:
             await {name}_api.close()
 
-        logger.info(f'succeeded to cleanup application with env={env}')
+        logger.info(f'succeeded to cleanup application with env={env}, host={host}, port={port}')
 ```
 
 #### 4. Store in app Dictionary
