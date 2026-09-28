@@ -201,7 +201,7 @@ class UserDao:
                 ensure_seq_script,
             ]
         )
-        self._logger.debug(f'succeeded to initialize {self._TABLE_NAME} table')
+        self._logger.info(f'succeeded to initialize {self._TABLE_NAME} table')
 
     async def insert(self, user_field: UserField) -> Any:
         """Insert user
@@ -530,7 +530,7 @@ class UserDao:
         '''
 
         await self._db.exec(create_table_script)
-        self._logger.debug(f'succeeded to initialize {self._TABLE_NAME} table in dfs://{self._config["db_path"]}')
+        self._logger.info(f'succeeded to initialize {self._TABLE_NAME} table in dfs://{self._config["db_path"]}')
 
     async def insert(self, user_field: UserField) -> Any:
         """Insert user
