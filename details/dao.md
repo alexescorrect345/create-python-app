@@ -40,7 +40,7 @@ Skip methods that are not needed by the selected database. For example, `upsert`
 # ✅ Correct: Use single quotes for database scripts
 script = f'SELECT id, username, password FROM {self._TABLE_NAME} WHERE id = ?'
 script = f'INSERT INTO {self._TABLE_NAME} (username, password) VALUES (?, ?)'
-updates.append('username = ?')
+update_clause_list.append('username = ?')
 
 # ✅ Correct: Use three single quotes for multi-line database scripts
 script = f'''
@@ -82,6 +82,26 @@ rows = await self._db.exec(script=script, params=(user_id,))  # Should use id
 ```
 
 The naming rule above applies to all supported databases. The code snippet is SQL-style only; when using `DolphinDB`, keep the same field names but use DolphinDB query scripts or DB helpers instead of SQLite-style parameter placeholders.
+
+#### SQL Construction List Naming
+
+Local lists used to build database scripts must use a singular element name with the `_list` suffix. Use the following names consistently in SQLite and DolphinDB implementations:
+
+| Variable | Purpose |
+|----------|---------|
+| `update_clause_list` | Update assignment fragments |
+| `script_param_list` | Bound parameters for write scripts |
+| `condition_list` | Query condition fragments |
+| `value_list` | Bound parameters for data queries |
+| `order_part_list` | Sorting fragments |
+| `count_value_list` | Bound parameters for count queries |
+
+#### Sorting Field Whitelist
+
+- Validate sort field names against a whitelist before interpolating them into database scripts.
+- When API sort field names match database column names and only membership checks are needed, use a `set` named `_ORDER_FIELD_SET`. Do not use a dictionary with identical keys and values for this purpose.
+- Use a `dict` when a real mapping is needed, such as translating API field names to different database column names or predefined expressions.
+- Log invalid fields or directions and raise `Error(DbErrc.INVALID_ORDERBY.value, message)`.
 
 ### Dependency Injection Pattern
 
@@ -131,11 +151,7 @@ class UserDao:
     _logger = logging.getLogger(__name__)
     _TABLE_NAME = 't_user'
     _INIT_SEQ = 1000000
-    _ORDER_FIELD_MAP = {
-        'id': 'id',
-        'username': 'username',
-        'role_id': 'role_id',
-    }
+    _ORDER_FIELD_SET = {'id', 'username', 'role_id'}
 
     def __init__(self, config: dict[str, Any]) -> None:
         """Initialize
@@ -250,25 +266,25 @@ class UserDao:
             self._logger.error(message)
             raise Error(DbErrc.MISSING_DB.value, message)
 
-        updates = []
-        script_params = []
+        update_clause_list = []
+        script_param_list = []
 
         if "username" in params:
-            updates.append('username = ?')
-            script_params.append(params["username"])
+            update_clause_list.append('username = ?')
+            script_param_list.append(params["username"])
         if "password" in params:
-            updates.append('password = ?')
-            script_params.append(params["password"])
+            update_clause_list.append('password = ?')
+            script_param_list.append(params["password"])
         if "role_id" in params:
-            updates.append('role_id = ?')
-            script_params.append(params["role_id"])
+            update_clause_list.append('role_id = ?')
+            script_param_list.append(params["role_id"])
 
-        if not updates:
+        if not update_clause_list:
             return
 
-        script_params.append(id)
-        script = f'UPDATE {self._TABLE_NAME} SET {", ".join(updates)} WHERE id = ?'
-        await self._db.exec(script=script, params=tuple(script_params))
+        script_param_list.append(id)
+        script = f'UPDATE {self._TABLE_NAME} SET {", ".join(update_clause_list)} WHERE id = ?'
+        await self._db.exec(script=script, params=tuple(script_param_list))
         self._logger.debug(f'succeeded to update user with id={id}, params={params}')
 
     async def delete_by_id(self, id: Any) -> None:
@@ -358,36 +374,36 @@ class UserDao:
             raise Error(DbErrc.MISSING_DB.value, message)
 
         offset = (page - 1) * page_size
-        conditions = []
-        values: list[Any] = []
+        condition_list = []
+        value_list: list[Any] = []
 
         if params.get("username") is not None:
-            conditions.append('u.username = ?')
-            values.append(params["username"])
+            condition_list.append('u.username = ?')
+            value_list.append(params["username"])
 
         if params.get("password") is not None:
-            conditions.append('u.password = ?')
-            values.append(params["password"])
+            condition_list.append('u.password = ?')
+            value_list.append(params["password"])
 
         if params.get("role_id") is not None:
-            conditions.append('u.role_id = ?')
-            values.append(params["role_id"])
+            condition_list.append('u.role_id = ?')
+            value_list.append(params["role_id"])
 
-        where_clause = ('WHERE ' + ' AND '.join(conditions)) if conditions else ''
+        where_clause = ('WHERE ' + ' AND '.join(condition_list)) if condition_list else ''
 
-        order_parts = []
+        order_part_list = []
         for field, direction in (orderby or [('id', 'desc')]):
             if direction not in ('asc', 'desc'):
                 message = f'invalid order direction with field={field}, direction={direction}'
                 self._logger.error(message)
                 raise Error(DbErrc.INVALID_ORDERBY.value, message)
-            if field not in self._ORDER_FIELD_MAP:
+            if field not in self._ORDER_FIELD_SET:
                 message = f'invalid order field with field={field}'
                 self._logger.error(message)
                 raise Error(DbErrc.INVALID_ORDERBY.value, message)
-            order_parts.append(f'u.{self._ORDER_FIELD_MAP[field]} {direction.upper()}')
+            order_part_list.append(f'u.{field} {direction.upper()}')
 
-        order_clause = 'ORDER BY ' + ', '.join(order_parts)
+        order_clause = 'ORDER BY ' + ', '.join(order_part_list)
 
         if field_type == FieldType.FULL:
             script = f'''
@@ -409,13 +425,13 @@ class UserDao:
 
         count_script = f'SELECT COUNT(*) FROM {self._TABLE_NAME} u {where_clause}'
 
-        values.extend([page_size, offset])
+        value_list.extend([page_size, offset])
         # exclude pagination params (page_size, offset) for count query
-        count_values = values[:-2]
+        count_value_list = value_list[:-2]
 
         rows_list = await self._db.batch_exec(
             scripts=[script, count_script],
-            params_list=[tuple(values), tuple(count_values) if count_values else None]
+            params_list=[tuple(value_list), tuple(count_value_list) if count_value_list else None]
         )
         rows = rows_list[0]
         count_rows = rows_list[1]
@@ -479,11 +495,7 @@ class UserDao:
     _logger = logging.getLogger(__name__)
     _TABLE_NAME = 't_user'
     _INIT_SEQ = 1000000
-    _ORDER_FIELD_MAP = {
-        'id': 'id',
-        'username': 'username',
-        'role_id': 'role_id',
-    }
+    _ORDER_FIELD_SET = {'id', 'username', 'role_id'}
 
     def __init__(self, config: dict[str, Any]) -> None:
         """Initialize
@@ -652,21 +664,21 @@ class UserDao:
             self._logger.error(message)
             raise Error(DbErrc.MISSING_DB.value, message)
 
-        updates = []
+        update_clause_list = []
 
         if "username" in params:
-            updates.append(f'username = {DolphinDB.to_literal(params["username"])}')
+            update_clause_list.append(f'username = {DolphinDB.to_literal(params["username"])}')
         if "password" in params:
-            updates.append(f'password = {DolphinDB.to_literal(params["password"])}')
+            update_clause_list.append(f'password = {DolphinDB.to_literal(params["password"])}')
         if "role_id" in params:
-            updates.append(f'role_id = {DolphinDB.to_literal(params["role_id"])}')
+            update_clause_list.append(f'role_id = {DolphinDB.to_literal(params["role_id"])}')
 
-        if not updates:
+        if not update_clause_list:
             return
 
         script = f'''
         update loadTable("dfs://{self._config["db_path"]}", "{self._TABLE_NAME}")
-        set {", ".join(updates)}
+        set {", ".join(update_clause_list)}
         where id = {DolphinDB.to_literal(id)}
         '''
 
@@ -762,30 +774,30 @@ class UserDao:
             raise Error(DbErrc.MISSING_DB.value, message)
 
         offset = (page - 1) * page_size
-        conditions = []
+        condition_list = []
 
         if params.get("username") is not None:
-            conditions.append(f'username = {DolphinDB.to_literal(params["username"])}')
+            condition_list.append(f'username = {DolphinDB.to_literal(params["username"])}')
         if params.get("password") is not None:
-            conditions.append(f'password = {DolphinDB.to_literal(params["password"])}')
+            condition_list.append(f'password = {DolphinDB.to_literal(params["password"])}')
         if params.get("role_id") is not None:
-            conditions.append(f'role_id = {DolphinDB.to_literal(params["role_id"])}')
+            condition_list.append(f'role_id = {DolphinDB.to_literal(params["role_id"])}')
 
-        where_clause = ('where ' + ' and '.join(conditions)) if conditions else ''
+        where_clause = ('where ' + ' and '.join(condition_list)) if condition_list else ''
 
-        order_parts = []
+        order_part_list = []
         for field, direction in (orderby or [('id', 'desc')]):
             if direction not in ('asc', 'desc'):
                 message = f'invalid order direction with field={field}, direction={direction}'
                 self._logger.error(message)
                 raise Error(DbErrc.INVALID_ORDERBY.value, message)
-            if field not in self._ORDER_FIELD_MAP:
+            if field not in self._ORDER_FIELD_SET:
                 message = f'invalid order field with field={field}'
                 self._logger.error(message)
                 raise Error(DbErrc.INVALID_ORDERBY.value, message)
-            order_parts.append(f'{self._ORDER_FIELD_MAP[field]} {direction}')
+            order_part_list.append(f'{field} {direction}')
 
-        order_clause = 'order by ' + ', '.join(order_parts)
+        order_clause = 'order by ' + ', '.join(order_part_list)
 
         if field_type == FieldType.FULL:
             query_script = f'''

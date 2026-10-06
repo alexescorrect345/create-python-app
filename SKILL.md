@@ -1016,7 +1016,14 @@ Generate all template files from `details/` directory:
 
 ### Step 3: Configure Package Exports (__init__.py)
 
-Create `app/feature/{name}/__init__.py` to export all classes from this feature module. This allows importing with the shorter path `from app.feature.{name} import {Class}` instead of `from app.feature.{name}.{module} import {Class}`.
+Create `app/feature/{name}/__init__.py` to export all classes from this feature module. This allows callers outside the feature module to import with the shorter path `from app.feature.{name} import {Class}` instead of `from app.feature.{name}.{module} import {Class}`.
+
+**Import Scope (CLI and Web):**
+
+- **Outside the feature module**: Import exported classes through `app.feature.{name}` using the shorter path.
+- **Inside the same feature module**: Import directly from the concrete submodule, such as `from app.feature.user.field import UserField` inside `app/feature/user/dao.py`. Do not use the feature package's own short-path exports for internal dependencies, as the package may still be initializing and this can introduce circular imports.
+
+The short-path usage examples below apply only to imports from outside the feature module. Direct submodule imports inside the same feature module are correct and must not be reported as violations.
 
 > **⚠️ CLI vs Web Difference**
 >
@@ -1054,7 +1061,7 @@ Create `app/feature/{name}/__init__.py` to export all classes from this feature 
 > ]
 > ```
 
-**Usage Example:**
+**Usage Example (Outside the Feature Module):**
 
 > **CLI**:
 > ```python
