@@ -67,15 +67,17 @@ if self._user_service is None:
 
 Handler class methods should follow this order:
 
-1. **insert / insert_***: Insert and related methods
-2. **update / update_***: Update and related methods (e.g., update_by_id)
-3. **delete / delete_***: Delete and related methods (e.g., delete_by_id)
-4. **find / find_***: Find and related methods (e.g., find_by_id, find)
-5. **register_routes**: Route registration method (at the end)
+1. `__init__` and dependency setter methods (`set_*`)
+2. **register_routes**: Route registration method, immediately after the setters
+3. **insert / insert_***: Insert and related methods
+4. **update / update_***: Update and related methods (e.g., update_by_id)
+5. **delete / delete_***: Delete and related methods (e.g., delete_by_id)
+6. **find / find_***: Find and related methods (e.g., find_by_id, find)
+7. Private helper methods, after all public methods
 
 #### Route Registration Ordering
 
-Route registration order should be consistent with the method order above (insert → update → delete → find). See the `register_routes` method in the Complete UserHandler Template below.
+Keep route registration order consistent with the request-operation order: insert → update → delete → find. The `register_routes` method belongs immediately after the dependency setters; it does not go at the end of the class.
 
 #### Response Format Consistency
 
@@ -145,7 +147,15 @@ from typing import Any
 
 from aiohttp import web
 
-from app.common import Errc as CommonErrc, Error, SuccessResponse, read_json_object
+from app.common import (
+    Errc as CommonErrc,
+    Error,
+    SuccessResponse,
+    read_json_object,
+    to_orderby,
+    to_page,
+    to_page_size,
+)
 from app.feature.user.common import FieldType
 from app.feature.user.service import UserService
 
@@ -170,6 +180,20 @@ class UserHandler:
             user_service: User service
         """
         self._user_service = user_service
+
+    def register_routes(self, app: web.Application) -> None:
+        """Register routes
+
+        Args:
+            app: aiohttp application
+        """
+        # Order: insert → update → delete → find
+        app.router.add_post("/users", self.insert)
+        app.router.add_put("/users/{id}", self.update_by_id)
+        app.router.add_delete("/users/{id}", self.delete_by_id)
+        app.router.add_get("/users/{id}", self.find_by_id)
+        app.router.add_get("/users", self.find)
+        self._logger.info(f'user routes registered')
 
     async def insert(self, request: web.Request) -> web.Response:
         """Insert user (POST /users)
@@ -274,14 +298,7 @@ class UserHandler:
             self._logger.error(message)
             raise Error(CommonErrc.INVALID_ID.value, message) from e
 
-        # Parse FieldType
-        raw_field_type = request.query.get("field_type", 'simple').lower()
-        try:
-            field_type = FieldType(raw_field_type)
-        except Exception as e:
-            message = f'failed to parse field_type with raw_field_type={raw_field_type}'
-            self._logger.error(message)
-            raise Error(CommonErrc.INVALID_FIELD_TYPE.value, message) from e
+        field_type = self._required_field_type(request=request)
 
         # Service null check
         if self._user_service is None:
@@ -316,80 +333,21 @@ class UserHandler:
         Returns:
             HTTP response
         """
-        # Parse FieldType
-        raw_field_type = request.query.get("field_type", 'simple').lower()
-        try:
-            field_type = FieldType(raw_field_type)
-        except Exception as e:
-            message = f'failed to parse field_type with raw_field_type={raw_field_type}'
-            self._logger.error(message)
-            raise Error(CommonErrc.INVALID_FIELD_TYPE.value, message) from e
+        field_type = self._required_field_type(request=request)
 
-        # Collect query filters
-        payload: dict[str, Any] = {}
-        for key in ['role_id', 'username']:
-            value = request.query.get(key)
-            if value is not None:
-                payload[key] = value
+        # Pass all query parameters to the service layer
+        payload: dict[str, str] = dict(request.query)
 
         # Parse orderby (e.g. ?orderby=id:desc,username:asc)
         raw_orderby = request.query.get("orderby")
-        orderby: list[tuple[str, str]] | None = None
-        if raw_orderby is not None:
-            orderby = []
-            for part in raw_orderby.split(','):
-                item = part.strip()
-                if not item:
-                    continue
-                if ':' not in item:
-                    message = f'invalid orderby item with value={item}'
-                    self._logger.error(message)
-                    raise Error(CommonErrc.INVALID_ORDERBY.value, message)
-                field, direction = item.split(':', 1)
-                field = field.strip()
-                direction = direction.strip().lower()
-                if not field or direction not in ('asc', 'desc'):
-                    message = f'invalid orderby item with value={item}'
-                    self._logger.error(message)
-                    raise Error(CommonErrc.INVALID_ORDERBY.value, message)
-                orderby.append((field, direction))
-            if not orderby:
-                orderby = None
+        orderby = to_orderby(raw_orderby=raw_orderby)
 
         # Parse pagination
-        raw_page = request.query.get("page")
-        if raw_page is not None:
-            try:
-                page = int(raw_page)
-            except Exception as e:
-                message = f'failed to parse page with raw_page={raw_page}'
-                self._logger.error(message)
-                raise Error(CommonErrc.INVALID_PAGE.value, message) from e
-        else:
-            page = None
-
-        raw_page_size = request.query.get("page_size")
-        if raw_page_size is not None:
-            try:
-                page_size = int(raw_page_size)
-            except Exception as e:
-                message = f'failed to parse page_size with raw_page_size={raw_page_size}'
-                self._logger.error(message)
-                raise Error(CommonErrc.INVALID_PAGE_SIZE.value, message) from e
-        else:
-            page_size = None
+        page = to_page(raw_page=request.query.get("page"))
+        page_size = to_page_size(raw_page_size=request.query.get("page_size"))
 
         page = 1 if page is None else page
         page_size = sys.maxsize if page_size is None else page_size
-
-        if page < 1:
-            message = f'invalid page with page={page}'
-            self._logger.error(message)
-            raise Error(CommonErrc.INVALID_PAGE.value, message)
-        if page_size < 1:
-            message = f'invalid page_size with page_size={page_size}'
-            self._logger.error(message)
-            raise Error(CommonErrc.INVALID_PAGE_SIZE.value, message)
 
         # Service null check
         if self._user_service is None:
@@ -411,18 +369,14 @@ class UserHandler:
             SuccessResponse(data={"items": items, "pagination": pagination}).to_dict()
         )
 
-    # Route registration example
-    def register_routes(self, app: web.Application) -> None:
-        """Register routes
+    def _required_field_type(self, request: web.Request) -> FieldType:
+        """Parse the requested field type, defaulting to SIMPLE."""
+        raw_field_type = request.query.get("field_type", 'simple').lower()
+        try:
+            return FieldType(raw_field_type)
+        except Exception as e:
+            message = f'failed to parse field_type with raw_field_type={raw_field_type}'
+            self._logger.error(message)
+            raise Error(CommonErrc.INVALID_FIELD_TYPE.value, message) from e
 
-        Args:
-            app: aiohttp application
-        """
-        # Order: insert → update → delete → find
-        app.router.add_post("/users", self.insert)
-        app.router.add_put("/users/{id}", self.update_by_id)
-        app.router.add_delete("/users/{id}", self.delete_by_id)
-        app.router.add_get("/users/{id}", self.find_by_id)
-        app.router.add_get("/users", self.find)
-        self._logger.info(f'user routes registered')
 ```

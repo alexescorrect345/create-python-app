@@ -335,13 +335,22 @@ class UserService:
             User field object list with pagination info
 
         Raises:
-            Error: MISSING_DAO, INVALID_ROLE_ID
+            Error: MISSING_DAO, INVALID_PAGE, INVALID_PAGE_SIZE, INVALID_ROLE_ID
         """
         # DAO null check
         if self._user_dao is None:
             message = f'missing user_dao with payload={payload}, orderby={orderby}, field_type={field_type}, page={page}, page_size={page_size}'
             self._logger.error(message)
             raise Error(CommonErrc.MISSING_DAO.value, message)
+
+        if page < 1:
+            message = f'invalid page with page={page}'
+            self._logger.error(message)
+            raise Error(CommonErrc.INVALID_PAGE.value, message)
+        if page_size < 1:
+            message = f'invalid page_size with page_size={page_size}'
+            self._logger.error(message)
+            raise Error(CommonErrc.INVALID_PAGE_SIZE.value, message)
 
         params: dict[str, Any] = {}
 

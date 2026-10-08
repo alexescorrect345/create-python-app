@@ -189,7 +189,7 @@ class Errc(Enum):
     INVALID_FIELD_TYPE = 'myapp::common::017'
     INVALID_PAGE = 'myapp::common::018'
     INVALID_PAGE_SIZE = 'myapp::common::019'
-    INVALID_ORDERBY = 'myapp::common::020'
+    INVALID_ORDER_BY = 'myapp::common::020'
     INVALID_ID = 'myapp::common::021'
 ```
 
@@ -356,7 +356,66 @@ async def read_json_object(request: web.Request) -> dict[str, Any]:
         logger.error(message)
         raise Error(Errc.INVALID_JSON.value, message)
 
-    return payload
+return payload
+```
+
+#### Query Parameter Helpers (Web only)
+
+Add these shared helpers to `app/common.py` and use them in Web handlers rather
+than repeating order and pagination conversion logic. They return `None` for
+omitted optional parameters and raise the matching common error for malformed
+values.
+
+```python
+def to_orderby(raw_orderby: str | None) -> list[tuple[str, str]] | None:
+    """Parse comma-separated `field:direction` ordering expressions."""
+    if raw_orderby is None:
+        return None
+
+    orderby: list[tuple[str, str]] = []
+    for raw_item in raw_orderby.split(','):
+        item = raw_item.strip()
+        if not item:
+            continue
+        if ':' not in item:
+            message = f'invalid orderby with item={raw_item}'
+            logger.error(message)
+            raise Error(Errc.INVALID_ORDER_BY.value, message)
+
+        raw_field, raw_direction = item.split(':', 1)
+        field = raw_field.strip()
+        direction = raw_direction.strip().lower()
+        if not field or direction not in ('asc', 'desc'):
+            message = f'invalid orderby with item={raw_item}'
+            logger.error(message)
+            raise Error(Errc.INVALID_ORDER_BY.value, message)
+        orderby.append((field, direction))
+
+    return orderby or None
+
+
+def to_page(raw_page: str | None) -> int | None:
+    """Convert an optional page query parameter to an integer."""
+    if raw_page is None:
+        return None
+    try:
+        return int(raw_page)
+    except Exception as e:
+        message = f'failed to parse page with raw_page={raw_page}'
+        logger.error(message)
+        raise Error(Errc.INVALID_PAGE.value, message) from e
+
+
+def to_page_size(raw_page_size: str | None) -> int | None:
+    """Convert an optional page_size query parameter to an integer."""
+    if raw_page_size is None:
+        return None
+    try:
+        return int(raw_page_size)
+    except Exception as e:
+        message = f'failed to parse page_size with raw_page_size={raw_page_size}'
+        logger.error(message)
+        raise Error(Errc.INVALID_PAGE_SIZE.value, message) from e
 ```
 
 ### Step 6: Create app/api/__init__.py
