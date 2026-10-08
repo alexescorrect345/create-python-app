@@ -11,6 +11,8 @@
 3. **No Business Error Handling**: Business errors are handled uniformly by the error middleware
 4. **Parameter Parsing**: Extract path parameters, query parameters, and request body from requests
 
+For JSON object request bodies, import and use the shared `read_json_object` helper from `app.common`. It rejects malformed JSON and top-level values that are not objects with `CommonErrc.INVALID_JSON`; do not duplicate JSON parsing and shape validation in individual handlers.
+
 ### Rules
 
 #### Parameter Naming Consistency with Service
@@ -143,7 +145,7 @@ from typing import Any
 
 from aiohttp import web
 
-from app.common import Errc as CommonErrc, Error, SuccessResponse
+from app.common import Errc as CommonErrc, Error, SuccessResponse, read_json_object
 from app.feature.user.common import FieldType
 from app.feature.user.service import UserService
 
@@ -178,14 +180,7 @@ class UserHandler:
         Returns:
             HTTP response
         """
-        # Parse request body
-        try:
-            payload = await request.json()
-        except Exception as e:
-            text = await request.text()
-            message = f'failed to parse json body with text={text}'
-            self._logger.error(message)
-            raise Error(CommonErrc.INVALID_JSON.value, message) from e
+        payload = await read_json_object(request=request)
 
         if self._user_service is None:
             message = f'missing user_service with payload={payload}'
@@ -216,14 +211,7 @@ class UserHandler:
             self._logger.error(message)
             raise Error(CommonErrc.INVALID_ID.value, message) from e
 
-        # Parse request body
-        try:
-            payload = await request.json()
-        except Exception as e:
-            text = await request.text()
-            message = f'failed to parse json body with text={text}'
-            self._logger.error(message)
-            raise Error(CommonErrc.INVALID_JSON.value, message) from e
+        payload = await read_json_object(request=request)
 
         if self._user_service is None:
             message = f'missing user_service with id={id}, payload={payload}'

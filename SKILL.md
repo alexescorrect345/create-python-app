@@ -327,6 +327,38 @@ class Pagination:
         return f'Pagination(page={self.page}, page_size={self.page_size}, total={self.total}, total_pages={self.total_pages}, has_next={self.has_next}, has_prev={self.has_prev})'
 ```
 
+#### JSON Request Body Helper (Web only)
+
+For Web handlers that expect a JSON object, add the following shared helper to `app/common.py`. Handlers should call this helper instead of parsing and validating the request body independently.
+
+```python
+import logging
+from typing import Any
+
+from aiohttp import web
+
+logger = logging.getLogger(__name__)
+
+
+async def read_json_object(request: web.Request) -> dict[str, Any]:
+    """Parse a JSON request body and require a top-level object"""
+    try:
+        payload = await request.json()
+    except Exception as e:
+        text = await request.text()
+        message = f'failed to parse json body with text={text}'
+        logger.error(message)
+        raise Error(Errc.INVALID_JSON.value, message) from e
+
+    if not isinstance(payload, dict):
+        text = await request.text()
+        message = f'failed to parse json body with text={text}'
+        logger.error(message)
+        raise Error(Errc.INVALID_JSON.value, message)
+
+    return payload
+```
+
 ### Step 6: Create app/api/__init__.py
 
 Create `app/api/__init__.py` with the following content:
