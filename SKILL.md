@@ -1090,7 +1090,21 @@ class Task(ABC):
 
 ### Step 2: Generate Template Files
 
-Generate all template files from `details/` directory:
+Generate all template files from `details/` directory.
+
+For `service.py`, follow the class layout and complete template in
+`details/service.md`, including reusable `_validate_*` helpers, conflict
+handling, and updates that persist only changed fields. Integer field validators
+must accept integer strings and convert them with `int()`. Catch conversion
+failures with `except Exception as e`; log invalid values before returning
+`None` for optional filters or raising a business error. Adapt the example to
+the feature's fields and business rules.
+
+For Web `handler.py`, follow the parameter parsing contract in
+`details/handler.md`: pass raw business fields to the Service through `payload`,
+and parse HTTP-level path, field type, ordering, and pagination parameters in
+the Handler or shared helpers. Generate the Handler and Service together so
+their parameter types and validation behavior agree.
 
 > **CLI**:
 > - `details/field.md` → `app/feature/{name}/field.py`

@@ -393,18 +393,43 @@ if __name__ == '__main__':
 
 Create `app/feature/{name}/common.py` with the `Errc` enum class:
 
+Error code format: `{project}::{module}::{number}`.
+Replace `myapp` in all examples with the actual project name.
+
+| Error name | Number range |
+|------------|--------------|
+| `UNKNOWN_ERROR` | `000` |
+| Other errors | `001`–`099` |
+| `MISSING_*` | `100`–`199` |
+| `INVALID_*` | `200`–`299` |
+| `FAILED_*` | `300`–`399` |
+
+The number ranges above are recommended defaults. Use them when the project
+has no special requirements. If the project defines its own error-code
+numbering scheme or range assignments, follow the project's conventions.
+
+When using these defaults, assign numbers sequentially within each category
+and module.
+
 ```python
 from enum import Enum
 
-class Errc(Enum):
-    """Error code enum
 
-    Error code format: myapp::module::number
-    """
+class Errc(Enum):
+    """User error code enum"""
+
     UNKNOWN_ERROR = 'myapp::user::000'
+
     NOT_FOUND = 'myapp::user::001'
-    USERNAME_EXISTS = 'myapp::user::002'
-    # ... add more business error codes
+    EXIST_USERNAME = 'myapp::user::002'
+
+    MISSING_ROLE_ID = 'myapp::user::100'
+    MISSING_USERNAME = 'myapp::user::101'
+    MISSING_PASSWORD = 'myapp::user::102'
+
+    INVALID_ROLE_ID = 'myapp::user::200'
+    INVALID_USERNAME = 'myapp::user::201'
+    INVALID_PASSWORD = 'myapp::user::202'
 ```
 
 ### Step 5: Initialize Feature in app/main.py (Web)
@@ -460,10 +485,10 @@ Add after database initialization (if any), before `app = web.Application(...)`:
     # user_dao.set_db(db=sqlite_db)
 
     user_service = UserService(config=config)
-    # user_service.set_user_dao(dao=user_dao)
+    # user_service.set_user_dao(user_dao=user_dao)
 
     user_handler = UserHandler(config=config)
-    user_handler.set_user_service(service=user_service)
+    user_handler.set_user_service(user_service=user_service)
 
     cors_enabled = bool(config["web"].get("cors", False))
 

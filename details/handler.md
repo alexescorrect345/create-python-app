@@ -15,6 +15,24 @@ For JSON object request bodies, import and use the shared `read_json_object` hel
 
 ### Rules
 
+#### HTTP Parameter Parsing and Business Field Validation
+
+- Pass raw business fields, such as `role_id`, `sort`, and `username`, to the
+  Service through `payload`. Query parameter values are strings, including
+  numeric values; use `dict(request.query)` to preserve them for the Service's
+  reusable validators. JSON object fields are passed through after
+  `read_json_object` parses the request body.
+- The Service normalizes integer strings, validates business fields, and
+  decides whether an invalid optional filter is logged and ignored or raises
+  a business error. Follow the validation contract in `service.md`.
+- Parse HTTP-level parameters in the Handler: path `id` and `field_type`
+  directly, and `orderby`, `page`, and `page_size` through the shared
+  `to_orderby`, `to_page`, and `to_page_size` helpers from `app.common`.
+- Catch HTTP parameter conversion exceptions at the conversion site with
+  `except Exception as e`, log with `self._logger.error(message)` (or the
+  shared helper's logger), and raise the matching common business error with
+  `from e`. Business errors from the Service propagate to the error middleware.
+
 #### Parameter Naming Consistency with Service
 
 Handler methods' local variable names should **exactly match** Service layer method parameter names, ensuring code traceability and maintainability.
@@ -319,8 +337,10 @@ class UserHandler:
 
         Query Params:
             field_type: simple (default) or full (lowercase)
-            role_id: Filter by role ID (optional)
-            username: Filter by username (optional)
+            role_id: Integer string passed to the Service for conversion
+                (optional; invalid values are logged and ignored)
+            username: Filter by username (optional;
+                blank or invalid values are logged and ignored by the Service)
             orderby: Order spec, comma-separated field:direction pairs;
                 direction must be 'asc' or 'desc' (e.g., id:desc,username:asc).
                 Defaults to id:desc when omitted.
@@ -335,7 +355,7 @@ class UserHandler:
         """
         field_type = self._required_field_type(request=request)
 
-        # Pass all query parameters to the service layer
+        # Preserve raw query strings; the Service validates business filters
         payload: dict[str, str] = dict(request.query)
 
         # Parse orderby (e.g. ?orderby=id:desc,username:asc)

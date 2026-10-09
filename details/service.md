@@ -53,26 +53,142 @@ async def find_by_id(self, user_id: int) -> UserField:
 
 #### DAO Null Check
 
-Before executing all DAO-related operations, must check if DAO is initialized. If DAO is not initialized, should throw a business error.
+Check the DAO at each public method's entry. Private validators rely on this check.
 
 ```python
+# At the start of insert
 if self._user_dao is None:
-    message = f'missing user_dao with <params>={}'
+    message = f'missing user_dao with payload={payload}'
     self._logger.error(message)
     raise Error(CommonErrc.MISSING_DAO.value, message)
 ```
 
-#### Method Ordering
+#### Field Validation Helpers
 
-The order of methods in a Service class should follow this sequence:
+Reuse `_validate_<field>` methods across insert, update, and find.
+Use `def` for pure validation and `async def` when DAO access is needed.
 
-1. **insert / insert_***: Insert and related methods
-2. **upsert / upsert_***: Upsert and related methods (DolphinDB-specific and optional, e.g., upsert_by_id)
-3. **update / update_***: Update and related methods (e.g., update_by_id)
-4. **delete / delete_***: Delete and related methods (e.g., delete_by_id)
-5. **find / find_***: Find and related methods (e.g., find_by_id)
+Apply the same validation contract to every field helper:
 
-This order ensures a logical flow from data manipulation to data retrieval.
+- Integer fields accept `int` values and integer strings. Reject booleans and
+  other types; convert strings with `int()` before applying business rules or
+  building DAO parameters.
+- Catch conversion failures with `except Exception as e`. Keep the `try` block
+  limited to the conversion operation.
+- Explicitly invalid values, including type mismatches, blank strings, and
+  conversion failures, must be logged with `self._logger.error(message)` before
+  checking `allow_none`.
+- With `allow_none=True`, an omitted value (`None`) returns `None` directly;
+  an invalid value returns `None` after the error log. With `allow_none=False`,
+  log and raise the matching `MISSING_*` or `INVALID_*` business error. Use
+  `raise Error(...) from e` when wrapping a conversion exception.
+
+```python
+async def _validate_username(
+    self,
+    raw_username: Any,
+    check_exist: bool = False,
+    allow_none: bool = False,
+) -> str | UserField | None:
+    """Normalize username, logging invalid input before optionally ignoring it."""
+    if raw_username is None:
+        if allow_none:
+            return None
+        message = f'missing username with value={raw_username}'
+        self._logger.error(message)
+        raise Error(UserErrc.MISSING_USERNAME.value, message)
+
+    if not isinstance(raw_username, str):
+        message = f'invalid username with value={raw_username}'
+        self._logger.error(message)
+        if allow_none:
+            return None
+        raise Error(UserErrc.INVALID_USERNAME.value, message)
+
+    username = raw_username.strip()
+    if not username:
+        message = f'invalid username with raw_value={raw_username}'
+        self._logger.error(message)
+        if allow_none:
+            return None
+        raise Error(UserErrc.INVALID_USERNAME.value, message)
+
+    if check_exist:
+        user_list, _ = await self._user_dao.find({"username": username})
+        if user_list:
+            return user_list[0]
+
+    return username
+```
+
+Public methods decide whether a matching record represents a conflict:
+
+```python
+# insert: any matching username is a conflict
+res_username = await self._validate_username(
+    raw_username=payload.get("username"),
+    check_exist=True,
+)
+if isinstance(res_username, UserField):
+    message = f'username already exists with existing_user_id={res_username.id}'
+    self._logger.error(message)
+    raise Error(UserErrc.EXIST_USERNAME.value, message)
+username = res_username
+```
+
+```python
+# update_by_id: the current record's username is allowed
+if "username" in payload:
+    res_username = await self._validate_username(
+        raw_username=payload["username"],
+        check_exist=True,
+    )
+    if isinstance(res_username, UserField):
+        if res_username.id != id:
+            message = f'username already exists with id={id}, existing_user_id={res_username.id}'
+            self._logger.error(message)
+            raise Error(UserErrc.EXIST_USERNAME.value, message)
+        username = res_username.username
+    else:
+        username = res_username
+
+    if username != user_field.username:
+        params["username"] = username
+```
+
+```python
+# find: omitted usernames are ignored; invalid usernames are logged and ignored
+username = await self._validate_username(
+    raw_username=payload.get("username"),
+    allow_none=True,
+)
+if username is not None:
+    params["username"] = username
+```
+
+#### Class Layout and Method Ordering
+
+Place the class docstring first, followed by the class-level logger:
+
+```python
+class UserService:
+    """User Service"""
+
+    _logger = logging.getLogger(__name__)
+```
+
+Service class methods should follow this order:
+
+1. **__init__**: Store configuration and initialize dependency members
+2. **set_***: Dependency setter methods, such as set_user_dao
+3. **insert / insert_***: Insert and related methods
+4. **upsert / upsert_***: Upsert and related methods (DolphinDB-specific and optional, e.g., upsert_by_id)
+5. **update / update_***: Update and related methods (e.g., update_by_id)
+6. **delete / delete_***: Delete and related methods (e.g., delete_by_id)
+7. **find_by_id**, then **find** and other query methods
+8. **Private helper methods**: Place field validators such as _validate_username after all public methods
+
+This order presents dependency setup first, business operations next, and reusable validation details last.
 
 Skip methods that are not provided by the selected DAO. For example, `upsert` usually only exists in DolphinDB-based DAOs.
 
@@ -93,8 +209,7 @@ Service uses **Setter Injection** pattern to inject dependencies:
 ### Service Initialization Example
 
 ```python
-from app.feature.user.dao import UserDao
-from app.feature.user.service import UserService
+from app.feature.user import UserDao, UserService
 
 # Initialize in main.py
 user_service = UserService(config=config)
@@ -116,6 +231,7 @@ from app.common import Errc as CommonErrc, Error, Pagination
 from app.feature.user.common import Errc as UserErrc, FieldType
 from app.feature.user.dao import UserDao
 from app.feature.user.field import UserField
+
 
 class UserService:
     """User Service"""
@@ -144,7 +260,7 @@ class UserService:
 
         Args:
             payload: User parameter dictionary with keys:
-                - role_id: Role ID (required)
+                - role_id: Role ID, as an integer or integer string (required)
                 - username: Username (required)
                 - password: Password (required)
 
@@ -152,41 +268,31 @@ class UserService:
             User ID
 
         Raises:
-            Error: MISSING_DAO, MISSING_ROLE_ID, MISSING_USERNAME, MISSING_PASSWORD
+            Error: MISSING_DAO, MISSING_ROLE_ID, INVALID_ROLE_ID,
+                MISSING_USERNAME, INVALID_USERNAME, EXIST_USERNAME,
+                MISSING_PASSWORD, INVALID_PASSWORD, or an error from the DAO
         """
         if self._user_dao is None:
             message = f'missing user_dao with payload={payload}'
             self._logger.error(message)
             raise Error(CommonErrc.MISSING_DAO.value, message)
 
-        # handle role_id
-        raw_role_id = payload.get("role_id")
-        if raw_role_id is None:
-            message = f'missing role_id with payload={payload}'
-            self._logger.error(message)
-            raise Error(UserErrc.MISSING_ROLE_ID.value, message)
-        try:
-            role_id = int(raw_role_id)
-        except Exception as e:
-            message = f'invalid role_id with value={raw_role_id}'
-            self._logger.error(message)
-            raise Error(UserErrc.INVALID_ROLE_ID.value, message) from e
+        # Validate role_id
+        role_id = self._validate_role_id(raw_role_id=payload.get("role_id"))
 
-        # handle username
-        raw_username = payload.get("username")
-        if not raw_username:
-            message = f'missing username with payload={payload}'
+        # Validate username
+        res_username = await self._validate_username(
+            raw_username=payload.get("username"),
+            check_exist=True,
+        )
+        if isinstance(res_username, UserField):
+            message = f'username already exists with existing_user_id={res_username.id}'
             self._logger.error(message)
-            raise Error(UserErrc.MISSING_USERNAME.value, message)
-        username = str(raw_username)
+            raise Error(UserErrc.EXIST_USERNAME.value, message)
+        username = res_username
 
-        # handle password
-        raw_password = payload.get("password")
-        if not raw_password:
-            message = f'missing password with payload={payload}'
-            self._logger.error(message)
-            raise Error(UserErrc.MISSING_PASSWORD.value, message)
-        password = str(raw_password)
+        # Validate password
+        password = self._validate_password(raw_password=payload.get("password"))
 
         # id is intentionally omitted; it is generated by the DAO
         # (SQLite via AUTOINCREMENT, DolphinDB via max(id)+1) and returned.
@@ -207,7 +313,7 @@ class UserService:
         Args:
             id: User ID
             payload: Update parameter dictionary, supported keys:
-                - role_id: New role ID (optional)
+                - role_id: New role ID, as an integer or integer string (optional)
                 - username: New username (optional)
                 - password: New password (optional)
 
@@ -215,13 +321,19 @@ class UserService:
             None
 
         Raises:
-            Error: MISSING_DAO, MISSING_USER_FIELD, INVALID_ROLE_ID
+            Error: MISSING_DAO, MISSING_FIELD, MISSING_ROLE_ID, INVALID_ROLE_ID,
+                MISSING_USERNAME, INVALID_USERNAME, EXIST_USERNAME,
+                MISSING_PASSWORD, INVALID_PASSWORD, or an error from the DAO
         """
         # DAO null check
         if self._user_dao is None:
             message = f'missing user_dao with id={id}, payload={payload}'
             self._logger.error(message)
             raise Error(CommonErrc.MISSING_DAO.value, message)
+
+        if not payload:
+            self._logger.warning(f'empty payload for update user with id={id}')
+            return None
 
         # Check if user exists
         user_field = await self._user_dao.find_by_id(id)
@@ -230,39 +342,41 @@ class UserService:
             self._logger.error(message)
             raise Error(CommonErrc.MISSING_FIELD.value, message)
 
-        if not payload:
-            self._logger.warning(f'empty payload for update user with id={id}')
-            return None
-
         params: dict[str, Any] = {}
 
-        # handle role_id
+        # Validate role_id
         if "role_id" in payload:
-            raw_role_id = payload["role_id"]
-            try:
-                params["role_id"] = int(raw_role_id)
-            except Exception as e:
-                message = f'invalid role_id with value={raw_role_id}'
-                self._logger.error(message)
-                raise Error(UserErrc.INVALID_ROLE_ID.value, message) from e
+            role_id = self._validate_role_id(raw_role_id=payload["role_id"])
+            if role_id != user_field.role_id:
+                params["role_id"] = role_id
 
-        # handle username
+        # Validate username
         if "username" in payload:
-            raw_username = payload["username"]
-            if not raw_username:
-                message = f'missing username with payload={payload}'
-                self._logger.error(message)
-                raise Error(UserErrc.MISSING_USERNAME.value, message)
-            params["username"] = str(raw_username)
+            res_username = await self._validate_username(
+                raw_username=payload["username"],
+                check_exist=True,
+            )
+            if isinstance(res_username, UserField):
+                if res_username.id != id:
+                    message = f'username already exists with id={id}, existing_user_id={res_username.id}'
+                    self._logger.error(message)
+                    raise Error(UserErrc.EXIST_USERNAME.value, message)
+                username = res_username.username
+            else:
+                username = res_username
 
-        # handle password
+            if username != user_field.username:
+                params["username"] = username
+
+        # Validate password
         if "password" in payload:
-            raw_password = payload["password"]
-            if not raw_password:
-                message = f'missing password with payload={payload}'
-                self._logger.error(message)
-                raise Error(UserErrc.MISSING_PASSWORD.value, message)
-            params["password"] = str(raw_password)
+            password = self._validate_password(raw_password=payload["password"])
+            if password != user_field.password:
+                params["password"] = password
+
+        if not params:
+            self._logger.info(f'no user fields changed with id={id}, payload={payload}')
+            return None
 
         # Update user
         await self._user_dao.update_by_id(id, params=params)
@@ -322,8 +436,10 @@ class UserService:
 
         Args:
             payload: Query parameter dictionary, supported keys:
-                - role_id: Role ID (optional)
-                - username: Username (optional)
+                - role_id: Integer role ID or integer string (optional;
+                    invalid values are logged and ignored)
+                - username: Username (optional;
+                    blank or invalid values are logged and ignored)
             orderby: Order spec list, each item is a (field_name, direction) tuple;
                 direction must be 'asc' or 'desc'; order follows list order,
                 defaults to [('id', 'desc')] when None or empty
@@ -335,7 +451,8 @@ class UserService:
             User field object list with pagination info
 
         Raises:
-            Error: MISSING_DAO, INVALID_PAGE, INVALID_PAGE_SIZE, INVALID_ROLE_ID
+            Error: MISSING_DAO, INVALID_PAGE, INVALID_PAGE_SIZE,
+                or an error from the DAO
         """
         # DAO null check
         if self._user_dao is None:
@@ -347,6 +464,7 @@ class UserService:
             message = f'invalid page with page={page}'
             self._logger.error(message)
             raise Error(CommonErrc.INVALID_PAGE.value, message)
+
         if page_size < 1:
             message = f'invalid page_size with page_size={page_size}'
             self._logger.error(message)
@@ -354,21 +472,21 @@ class UserService:
 
         params: dict[str, Any] = {}
 
-        # handle role_id
-        if "role_id" in payload:
-            raw_role_id = payload["role_id"]
-            try:
-                params["role_id"] = int(raw_role_id)
-            except Exception as e:
-                message = f'invalid role_id with value={raw_role_id}'
-                self._logger.error(message)
-                raise Error(UserErrc.INVALID_ROLE_ID.value, message) from e
+        # Validate role_id
+        role_id = self._validate_role_id(
+            raw_role_id=payload.get("role_id"),
+            allow_none=True,
+        )
+        if role_id is not None:
+            params["role_id"] = role_id
 
-        # handle username
-        if "username" in payload:
-            raw_username = payload["username"]
-            if raw_username and str(raw_username).strip():
-                params["username"] = str(raw_username).strip()
+        # Validate username
+        username = await self._validate_username(
+            raw_username=payload.get("username"),
+            allow_none=True,
+        )
+        if username is not None:
+            params["username"] = username
 
         return await self._user_dao.find(
             params=params,
@@ -377,4 +495,126 @@ class UserService:
             page_size=page_size,
             field_type=field_type
         )
+
+    def _validate_role_id(
+        self,
+        raw_role_id: Any,
+        allow_none: bool = False,
+    ) -> int | None:
+        """Validate and normalize a role ID.
+
+        Args:
+            raw_role_id: Unvalidated role ID, as an integer or integer string
+            allow_none: Whether missing or invalid values are ignored;
+                invalid values are logged before being ignored
+
+        Returns:
+            Normalized integer role ID, or None when optional input is ignored
+
+        Raises:
+            Error: MISSING_ROLE_ID or INVALID_ROLE_ID
+        """
+        if raw_role_id is None:
+            if allow_none:
+                return None
+            message = f'missing role_id with value={raw_role_id}'
+            self._logger.error(message)
+            raise Error(UserErrc.MISSING_ROLE_ID.value, message)
+
+        if isinstance(raw_role_id, bool) or not isinstance(raw_role_id, (int, str)):
+            message = f'invalid role_id with value={raw_role_id}'
+            self._logger.error(message)
+            if allow_none:
+                return None
+            raise Error(UserErrc.INVALID_ROLE_ID.value, message)
+
+        try:
+            role_id = int(raw_role_id) if isinstance(raw_role_id, str) else raw_role_id
+        except Exception as e:
+            message = f'invalid role_id with value={raw_role_id}'
+            self._logger.error(message)
+            if allow_none:
+                return None
+            raise Error(UserErrc.INVALID_ROLE_ID.value, message) from e
+
+        return role_id
+
+    async def _validate_username(
+        self,
+        raw_username: Any,
+        check_exist: bool = False,
+        allow_none: bool = False,
+    ) -> str | UserField | None:
+        """Validate and normalize a username, optionally checking for a match.
+
+        Args:
+            raw_username: Unvalidated username
+            check_exist: Whether to find a user with the normalized username
+            allow_none: Whether missing or invalid values are ignored;
+                invalid values are logged before being ignored
+
+        Returns:
+            Normalized username, matching UserField, or None when ignored
+
+        Raises:
+            Error: MISSING_USERNAME, INVALID_USERNAME, or an error from the DAO
+        """
+        if raw_username is None:
+            if allow_none:
+                return None
+            message = f'missing username with value={raw_username}'
+            self._logger.error(message)
+            raise Error(UserErrc.MISSING_USERNAME.value, message)
+
+        if not isinstance(raw_username, str):
+            message = f'invalid username with value={raw_username}'
+            self._logger.error(message)
+            if allow_none:
+                return None
+            raise Error(UserErrc.INVALID_USERNAME.value, message)
+
+        username = raw_username.strip()
+        if not username:
+            message = f'invalid username with raw_value={raw_username}'
+            self._logger.error(message)
+            if allow_none:
+                return None
+            raise Error(UserErrc.INVALID_USERNAME.value, message)
+
+        if check_exist:
+            user_list, _ = await self._user_dao.find({"username": username})
+            if user_list:
+                return user_list[0]
+
+        return username
+
+    def _validate_password(self, raw_password: Any) -> str:
+        """Validate a required password string, preserving whitespace.
+
+        Args:
+            raw_password: Unvalidated password
+
+        Returns:
+            Non-empty password string with its original whitespace
+
+        Raises:
+            Error: MISSING_PASSWORD or INVALID_PASSWORD
+        """
+        if raw_password is None:
+            message = 'missing password'
+            self._logger.error(message)
+            raise Error(UserErrc.MISSING_PASSWORD.value, message)
+
+        if not isinstance(raw_password, str):
+            message = 'invalid password'
+            self._logger.error(message)
+            raise Error(UserErrc.INVALID_PASSWORD.value, message)
+
+        password = raw_password
+        if not password:
+            message = 'invalid password'
+            self._logger.error(message)
+            raise Error(UserErrc.INVALID_PASSWORD.value, message)
+
+        return password
 ```
