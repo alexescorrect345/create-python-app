@@ -158,39 +158,36 @@ from enum import Enum
 
 
 class Errc(Enum):
-    """Common error code enum"""
+    """Common error codes ordered by numeric suffix
 
-    # HTTP related errors
-    UNKNOWN_ERROR = 'myapp::common::000'
-    RESOURCE_NOT_FOUND = 'myapp::common::001'
-    METHOD_NOT_ALLOWED = 'myapp::common::002'
+    Ranges start at 001 for other errors, 100 for MISSING,
+    200 for INVALID, and 300 for FAILED.
+    """
 
-    # Common errors
-    INTERNAL_SERVER_ERROR = 'myapp::common::003'
-    BAD_REQUEST = 'myapp::common::004'
-    UNAUTHORIZED = 'myapp::common::005'
-    FORBIDDEN = 'myapp::common::006'
+    UNKNOWN_ERROR = 'myapp::common::001'
+    RESOURCE_NOT_FOUND = 'myapp::common::002'
+    METHOD_NOT_ALLOWED = 'myapp::common::003'
+    INTERNAL_SERVER_ERROR = 'myapp::common::004'
+    BAD_REQUEST = 'myapp::common::005'
+    UNAUTHORIZED = 'myapp::common::006'
+    FORBIDDEN = 'myapp::common::007'
+    TIMEOUT = 'myapp::common::008'
 
-    # Timeout errors
-    TIMEOUT = 'myapp::common::007'
+    MISSING_PARAMETER = 'myapp::common::100'
+    MISSING_CONFIG = 'myapp::common::101'
+    MISSING_SERVICE = 'myapp::common::102'
+    MISSING_DAO = 'myapp::common::103'
+    MISSING_API = 'myapp::common::104'
+    MISSING_FIELD = 'myapp::common::105'
 
-    # INVALID errors
-    INVALID_PARAMETER = 'myapp::common::008'
-    INVALID_JSON = 'myapp::common::009'
-    INVALID_TYPE = 'myapp::common::010'
-
-    # MISSING errors
-    MISSING_PARAMETER = 'myapp::common::011'
-    MISSING_CONFIG = 'myapp::common::012'
-    MISSING_SERVICE = 'myapp::common::013'
-    MISSING_DAO = 'myapp::common::014'
-    MISSING_API = 'myapp::common::015'
-    MISSING_FIELD = 'myapp::common::016'
-    INVALID_FIELD_TYPE = 'myapp::common::017'
-    INVALID_PAGE = 'myapp::common::018'
-    INVALID_PAGE_SIZE = 'myapp::common::019'
-    INVALID_ORDER_BY = 'myapp::common::020'
-    INVALID_ID = 'myapp::common::021'
+    INVALID_PARAMETER = 'myapp::common::200'
+    INVALID_JSON = 'myapp::common::201'
+    INVALID_TYPE = 'myapp::common::202'
+    INVALID_FIELD_TYPE = 'myapp::common::203'
+    INVALID_PAGE = 'myapp::common::204'
+    INVALID_PAGE_SIZE = 'myapp::common::205'
+    INVALID_ORDER_BY = 'myapp::common::206'
+    INVALID_ID = 'myapp::common::207'
 ```
 
 #### Shared Classes
