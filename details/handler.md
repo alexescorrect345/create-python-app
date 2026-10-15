@@ -6,10 +6,10 @@
 
 ### Handler Layer Responsibilities
 
-1. **HTTP Request/Response Handling**: Parse request parameters, return HTTP responses
+1. **HTTP Request/Response Handling**: Extract HTTP parameters, return HTTP responses
 2. **Call Service Layer**: Delegate all business logic to the Service layer
 3. **No Business Error Handling**: Business errors are handled uniformly by the error middleware
-4. **Parameter Parsing**: Extract path parameters, query parameters, and request body from requests
+4. **Parameter Extraction**: Extract path parameters and request bodies; preserve raw query parameters for the Service layer to validate
 
 For JSON object request bodies, import and use the shared `read_json_object` helper from `app.common`. It rejects malformed JSON and top-level values that are not objects with `CommonErrc.INVALID_JSON`; do not duplicate JSON parsing and shape validation in individual handlers.
 
@@ -17,21 +17,23 @@ For JSON object request bodies, import and use the shared `read_json_object` hel
 
 #### HTTP Parameter Parsing and Business Field Validation
 
-- Pass raw business fields, such as `role_id`, `sort`, and `username`, to the
-  Service through `payload`. Query parameter values are strings, including
-  numeric values; use `dict(request.query)` to preserve them for the Service's
-  reusable validators. JSON object fields are passed through after
+- Pass query parameters to the Service without converting or validating them in
+  the Handler. For list queries, use `payload: dict[str, str] = dict(request.query)`
+  and call the Service with `payload=payload`; query values remain strings,
+  including numeric values. JSON object fields are passed through after
   `read_json_object` parses the request body.
 - The Service normalizes integer strings, validates business fields, and
-  decides whether an invalid optional filter is logged and ignored or raises
-  a business error. Follow the validation contract in `service.md`.
-- Parse HTTP-level parameters in the Handler: path `id` and `field_type`
-  directly, and `orderby`, `page`, and `page_size` through the shared
-  `to_orderby`, `to_page`, and `to_page_size` helpers from `app.common`.
-- Catch HTTP parameter conversion exceptions at the conversion site with
-  `except Exception as e`, log with `self._logger.error(message)` (or the
-  shared helper's logger), and raise the matching common business error with
-  `from e`. Business errors from the Service propagate to the error middleware.
+  parses and validates query controls such as `field_type`, `orderby`, `page`,
+  and `page_size`, and decides whether invalid optional filters are logged and
+  ignored or raise a business error. Follow the validation contract in
+  `service.md`.
+- Parse path parameters such as `id` in the Handler. For a single-resource
+  query that accepts `field_type`, pass its raw string to the matching Service
+  parameter (for example, `raw_field_type=request.query.get("field_type", "simple")`).
+- Catch path-parameter conversion exceptions at the conversion site with
+  `except Exception as e`, log with `self._logger.error(message)`, and raise
+  the matching common business error with `from e`. Query validation errors
+  raised by the Service propagate to the error middleware.
 
 #### Parameter Naming Consistency with Service
 
@@ -121,8 +123,9 @@ return web.json_response(
 
 | Operation Type | HTTP Status Code | data Content |
 |---------------|-----------------|--------------|
-| insert | 201 | Created resource object |
-| find / find_by_id | 200 | Resource object or list |
+| insert | 201 | Created resource ID: `{"id": id}` |
+| find_by_id | 200 | Resource object, or `null` when not found |
+| find | 200 | `{"items": [...], "pagination": {...}}` |
 | update_by_id | 200 | Empty dict `{}` |
 | delete_by_id | 200 | Empty dict `{}` |
 
@@ -159,7 +162,6 @@ user_handler.register_routes(app)
 > This template works unchanged on both SQLite and DolphinDB, because the Handler only depends on the Service layer, which itself stays DB-agnostic. Add Handler methods that mirror the Service method signatures; see `service.md`.
 
 ```python
-import sys
 import logging
 from typing import Any
 
@@ -170,11 +172,7 @@ from app.common import (
     Error,
     SuccessResponse,
     read_json_object,
-    to_orderby,
-    to_page,
-    to_page_size,
 )
-from app.feature.user.common import FieldType
 from app.feature.user.service import UserService
 
 class UserHandler:
@@ -316,16 +314,18 @@ class UserHandler:
             self._logger.error(message)
             raise Error(CommonErrc.INVALID_ID.value, message) from e
 
-        field_type = self._required_field_type(request=request)
-
         # Service null check
         if self._user_service is None:
-            message = f'missing user_service with id={id}, field_type={field_type}'
+            message = f'missing user_service with id={id}'
             self._logger.error(message)
             raise Error(CommonErrc.MISSING_SERVICE.value, message)
 
         # Call service layer
-        user_field = await self._user_service.find_by_id(id=id, field_type=field_type)
+        raw_field_type = request.query.get("field_type", "simple")
+        user_field = await self._user_service.find_by_id(
+            id=id,
+            raw_field_type=raw_field_type,
+        )
 
         # Return success response
         return web.json_response(
@@ -353,50 +353,21 @@ class UserHandler:
         Returns:
             HTTP response
         """
-        field_type = self._required_field_type(request=request)
-
-        # Preserve raw query strings; the Service validates business filters
+        # Pass raw query strings; the Service validates filters and query controls
         payload: dict[str, str] = dict(request.query)
-
-        # Parse orderby (e.g. ?orderby=id:desc,username:asc)
-        raw_orderby = request.query.get("orderby")
-        orderby = to_orderby(raw_orderby=raw_orderby)
-
-        # Parse pagination
-        page = to_page(raw_page=request.query.get("page"))
-        page_size = to_page_size(raw_page_size=request.query.get("page_size"))
-
-        page = 1 if page is None else page
-        page_size = sys.maxsize if page_size is None else page_size
 
         # Service null check
         if self._user_service is None:
-            message = f'missing user_service with payload={payload}, orderby={orderby}'
+            message = f'missing user_service with payload={payload}'
             self._logger.error(message)
             raise Error(CommonErrc.MISSING_SERVICE.value, message)
 
         # Call service layer
-        items, pagination = await self._user_service.find(
-            payload=payload,
-            orderby=orderby,
-            field_type=field_type,
-            page=page,
-            page_size=page_size
-        )
+        items, pagination = await self._user_service.find(payload=payload)
 
         # Return success response
         return web.json_response(
             SuccessResponse(data={"items": items, "pagination": pagination}).to_dict()
         )
-
-    def _required_field_type(self, request: web.Request) -> FieldType:
-        """Parse the requested field type, defaulting to SIMPLE."""
-        raw_field_type = request.query.get("field_type", 'simple').lower()
-        try:
-            return FieldType(raw_field_type)
-        except Exception as e:
-            message = f'failed to parse field_type with raw_field_type={raw_field_type}'
-            self._logger.error(message)
-            raise Error(CommonErrc.INVALID_FIELD_TYPE.value, message) from e
 
 ```

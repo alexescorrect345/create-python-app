@@ -361,16 +361,31 @@ return payload
 
 #### Query Parameter Helpers (Web only)
 
-Add these shared helpers to `app/common.py` and use them in Web handlers rather
-than repeating order and pagination conversion logic. They return `None` for
-omitted optional parameters and raise the matching common error for malformed
-values.
+Add these shared helpers to `app/common.py`. Web Handlers pass raw query
+strings to the Service, and Service methods use these helpers to validate
+`orderby`, `page`, and `page_size`.
+
+The helpers default to `allow_none=False`, which logs and raises the matching
+common error for missing or invalid input. For optional parameters, set
+`allow_none=payload.get("key") is None`: omitted or `None` values return `None`,
+while explicitly supplied malformed values still raise. If `allow_none=True` is
+passed unconditionally, invalid input is logged and ignored as `None`.
 
 ```python
-def to_orderby(raw_orderby: str | None) -> list[tuple[str, str]] | None:
-    """Parse comma-separated `field:direction` ordering expressions."""
-    if raw_orderby is None:
+def validate_orderby(
+    raw_orderby: Any,
+    allow_none: bool = False,
+) -> list[tuple[str, str]] | None:
+    """Validate comma-separated `field:direction` ordering expressions."""
+    if raw_orderby is None and allow_none:
         return None
+
+    if not isinstance(raw_orderby, str):
+        message = f'invalid orderby with raw_orderby={raw_orderby}'
+        logger.error(message)
+        if allow_none:
+            return None
+        raise Error(Errc.INVALID_ORDER_BY.value, message)
 
     orderby: list[tuple[str, str]] = []
     for raw_item in raw_orderby.split(','):
@@ -380,6 +395,8 @@ def to_orderby(raw_orderby: str | None) -> list[tuple[str, str]] | None:
         if ':' not in item:
             message = f'invalid orderby with item={raw_item}'
             logger.error(message)
+            if allow_none:
+                return None
             raise Error(Errc.INVALID_ORDER_BY.value, message)
 
         raw_field, raw_direction = item.split(':', 1)
@@ -388,34 +405,56 @@ def to_orderby(raw_orderby: str | None) -> list[tuple[str, str]] | None:
         if not field or direction not in ('asc', 'desc'):
             message = f'invalid orderby with item={raw_item}'
             logger.error(message)
+            if allow_none:
+                return None
             raise Error(Errc.INVALID_ORDER_BY.value, message)
         orderby.append((field, direction))
 
     return orderby or None
 
 
-def to_page(raw_page: str | None) -> int | None:
-    """Convert an optional page query parameter to an integer."""
-    if raw_page is None:
+def validate_page(raw_page: Any, allow_none: bool = False) -> int | None:
+    """Validate and convert a page query parameter to a positive integer."""
+    if raw_page is None and allow_none:
         return None
     try:
-        return int(raw_page)
+        page = int(raw_page)
     except Exception as e:
         message = f'failed to parse page with raw_page={raw_page}'
         logger.error(message)
+        if allow_none:
+            return None
         raise Error(Errc.INVALID_PAGE.value, message) from e
 
+    if page < 1:
+        message = f'invalid page with page={page}'
+        logger.error(message)
+        if allow_none:
+            return None
+        raise Error(Errc.INVALID_PAGE.value, message)
+    return page
 
-def to_page_size(raw_page_size: str | None) -> int | None:
-    """Convert an optional page_size query parameter to an integer."""
-    if raw_page_size is None:
+
+def validae_page_size(raw_page_size: Any, allow_none: bool = False) -> int | None:
+    """Validate and convert a page_size query parameter to a positive integer."""
+    if raw_page_size is None and allow_none:
         return None
     try:
-        return int(raw_page_size)
+        page_size = int(raw_page_size)
     except Exception as e:
         message = f'failed to parse page_size with raw_page_size={raw_page_size}'
         logger.error(message)
+        if allow_none:
+            return None
         raise Error(Errc.INVALID_PAGE_SIZE.value, message) from e
+
+    if page_size < 1:
+        message = f'invalid page_size with page_size={page_size}'
+        logger.error(message)
+        if allow_none:
+            return None
+        raise Error(Errc.INVALID_PAGE_SIZE.value, message)
+    return page_size
 ```
 
 ### Step 6: Create app/api/__init__.py
