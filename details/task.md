@@ -98,12 +98,9 @@ await user_task.init()
 task_handle = asyncio.create_task(user_task.run_in_loop())
 
 # Clean up task when application shuts down
-await user_task.close()  # Sets self._running = False, allowing the task loop to exit
-task_handle.cancel()
-try:
-    await task_handle
-except asyncio.CancelledError:
-    pass
+user_task.close()  # Sets the state to Task.State.CLOSING, allowing the task loop to exit
+# Wait for the loop task so _finalize can clean up the scene after the loop stops
+await task_handle  # The state becomes Task.State.CLOSED, the task can be destroyed
 ```
 
 ### Complete Task Template
