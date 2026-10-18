@@ -197,7 +197,25 @@ if __name__ == '__main__':
 
 ## Feature Creation Process (CLI)
 
-### Step 4: Initialize Feature in app/main.py (CLI)
+### Step 4: Define Error Codes (common.py) (CLI)
+
+Create `app/feature/{name}/common.py` with the `Errc` enum class, using the same rules as `web.md` Step 4:
+
+Error code format: `{project}::{module}::{number}`. Replace `myapp` in all examples with the actual project name.
+
+| Error name | Number range |
+|------------|--------------|
+| `UNKNOWN_ERROR` | `000` |
+| Other errors | `001`–`099` |
+| `MISSING_*` | `100`–`199` |
+| `INVALID_*` | `200`–`299` |
+| `FAILED_*` | `300`–`399` |
+
+The number ranges above are recommended defaults. Use them when the project has no special requirements. If the project defines its own error-code numbering scheme or range assignments, follow the project's conventions.
+
+When using these defaults, assign numbers sequentially within each category and module. When adding a new error code, take the next free number in its category's range, and update any documentation that lists error codes (e.g. `doc/WEB_API.md`).
+
+### Step 5: Initialize Feature in app/main.py (CLI)
 
 Initialize feature modules in `app/main.py` following the dependency pattern: **DAO** → **Service**. Only create DAO if a database is configured.
 

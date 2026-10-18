@@ -411,6 +411,10 @@ numbering scheme or range assignments, follow the project's conventions.
 When using these defaults, assign numbers sequentially within each category
 and module.
 
+The same number ranges apply to the shared `Errc` enums in `app/common.py`,
+`app/api/common.py`, and `app/db/common.py` (see `SKILL.md` Steps 5, 7, and
+9.3).
+
 ```python
 from enum import Enum
 

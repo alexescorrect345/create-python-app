@@ -153,6 +153,25 @@ main = "DEBUG"  # config.dev.toml, supports DEBUG, INFO, WARNING, ERROR, CRITICA
 
 #### Errc Enum
 
+Error code format: `{project}::{module}::{number}`. Replace `myapp` in all examples with the actual project name.
+
+Number ranges (recommended defaults. If the project defines its own error-code numbering scheme or range assignments, follow the project's conventions):
+
+| Error name | Number range |
+|------------|--------------|
+| `UNKNOWN_ERROR` | `000` |
+| Other errors | `001`–`099` |
+| `MISSING_*` | `100`–`199` |
+| `INVALID_*` | `200`–`299` |
+| `FAILED_*` | `300`–`399` |
+
+Numbering rules:
+
+- Ranges are per module: `common` (`app/common.py`), `api` (`app/api/common.py`), `db` (`app/db/common.py`), and each feature module (`app/feature/{name}/common.py`) number independently within its own prefix
+- Assign numbers sequentially within each category and module. When adding a new error code, take the next free number in its category's range
+- Error code values are opaque strings. Always reference them through `Errc.XXX.value`; never hardcode the literal code in business code
+- When adding or renumbering error codes, update any documentation that lists them (e.g. `doc/WEB_API.md`)
+
 ```python
 from enum import Enum
 
@@ -160,18 +179,18 @@ from enum import Enum
 class Errc(Enum):
     """Common error codes ordered by numeric suffix
 
-    Ranges start at 001 for other errors, 100 for MISSING,
-    200 for INVALID, and 300 for FAILED.
+    Ranges: 000 for UNKNOWN_ERROR, 001-099 for other errors,
+    100-199 for MISSING, 200-299 for INVALID, and 300-399 for FAILED.
     """
 
-    UNKNOWN_ERROR = 'myapp::common::001'
-    RESOURCE_NOT_FOUND = 'myapp::common::002'
-    METHOD_NOT_ALLOWED = 'myapp::common::003'
-    INTERNAL_SERVER_ERROR = 'myapp::common::004'
-    BAD_REQUEST = 'myapp::common::005'
-    UNAUTHORIZED = 'myapp::common::006'
-    FORBIDDEN = 'myapp::common::007'
-    TIMEOUT = 'myapp::common::008'
+    UNKNOWN_ERROR = 'myapp::common::000'
+    RESOURCE_NOT_FOUND = 'myapp::common::001'
+    METHOD_NOT_ALLOWED = 'myapp::common::002'
+    INTERNAL_SERVER_ERROR = 'myapp::common::003'
+    BAD_REQUEST = 'myapp::common::004'
+    UNAUTHORIZED = 'myapp::common::005'
+    FORBIDDEN = 'myapp::common::006'
+    TIMEOUT = 'myapp::common::007'
 
     MISSING_PARAMETER = 'myapp::common::100'
     MISSING_CONFIG = 'myapp::common::101'
@@ -476,9 +495,12 @@ from typing import Any
 
 class Errc(Enum):
     """API error code enum"""
+
     UNKNOWN_ERROR = 'myapp::api::000'
-    MISSING_SESSION = 'myapp::api::001'
-    FAILED_TO_REQUEST = 'myapp::api::002'
+
+    MISSING_SESSION = 'myapp::api::100'
+
+    FAILED_TO_REQUEST = 'myapp::api::300'
 
 
 def sanitize_headers(headers: dict[str, str] | None) -> dict[str, str] | None:
@@ -500,8 +522,16 @@ from typing import Any
 
 import aiohttp
 
-from app.common import Errc as CommonErrc, Error, ErrorResponse, SuccessResponse
-from app.api.common import Errc as ApiErrc, sanitize_headers
+from app.common import (
+    Errc as CommonErrc,
+    Error,
+    ErrorResponse,
+    SuccessResponse,
+)
+from app.api.common import (
+    Errc as ApiErrc,
+    sanitize_headers,
+)
 
 
 class InternalApi:
@@ -992,35 +1022,26 @@ from enum import Enum
 class Errc(Enum):
     """Database error code enum"""
 
-    # Common errors
     UNKNOWN_ERROR = 'myapp::db::000'
 
-    # Configuration errors
-    MISSING_DB_PATH = 'myapp::db::001'
+    NOT_CONNECTED = 'myapp::db::001'
 
-    # Connection errors
-    FAILED_TO_CONNECT = 'myapp::db::002'
-    FAILED_TO_DISCONNECT = 'myapp::db::003'
-    NOT_CONNECTED = 'myapp::db::004'
+    MISSING_DB_PATH = 'myapp::db::100'
+    MISSING_SCRIPT = 'myapp::db::101'
+    MISSING_HOST = 'myapp::db::102'
+    MISSING_PORT = 'myapp::db::103'
+    MISSING_USERID = 'myapp::db::104'
+    MISSING_PASSWORD = 'myapp::db::105'
+    MISSING_DB = 'myapp::db::106'
 
-    # Filesystem errors
-    FAILED_TO_MK_DB_DIR = 'myapp::db::005'
+    INVALID_VALUE_TYPE = 'myapp::db::200'
+    INVALID_ORDERBY = 'myapp::db::201'
 
-    # Execution errors
-    MISSING_SCRIPT = 'myapp::db::006'
-    FAILED_TO_EXEC = 'myapp::db::007'
-    FAILED_TO_FIND_INSERTED_ID = 'myapp::db::008'
-
-    # DolphinDB connection configuration errors
-    MISSING_HOST = 'myapp::db::009'
-    MISSING_PORT = 'myapp::db::010'
-    MISSING_USERID = 'myapp::db::011'
-    MISSING_PASSWORD = 'myapp::db::012'
-
-    # DAO errors
-    MISSING_DB = 'myapp::db::013'
-    INVALID_VALUE_TYPE = 'myapp::db::014'
-    INVALID_ORDERBY = 'myapp::db::015'
+    FAILED_TO_CONNECT = 'myapp::db::300'
+    FAILED_TO_DISCONNECT = 'myapp::db::301'
+    FAILED_TO_MK_DB_DIR = 'myapp::db::302'
+    FAILED_TO_EXEC = 'myapp::db::303'
+    FAILED_TO_FIND_INSERTED_ID = 'myapp::db::304'
 ```
 
 #### 9.4 Create `app/db/{Name}DB.py` (Optional)
@@ -1110,6 +1131,7 @@ class Task(ABC):
 >
 > **CLI** — `app/feature/{name}/` contains:
 > - `__init__.py`
+> - `common.py` - Error codes (Errc)
 > - `field.py` - Data transfer object
 > - `dao.py` - Data access object (optional, only when database is needed)
 > - `service.py` - Business logic layer
