@@ -1040,6 +1040,7 @@ Create `app/task.py` with the following content:
 ```python
 import logging
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Any
 
 from app.common import Error
@@ -1047,6 +1048,13 @@ from app.common import Error
 
 class Task(ABC):
     """Background task base class"""
+
+    class State(Enum):
+        """Task lifecycle state"""
+        INIT    = 'INIT'
+        RUNNING = 'RUNNING'
+        CLOSING = 'CLOSING'
+        CLOSED  = 'CLOSED'
 
     _logger = logging.getLogger(__name__)
 
@@ -1057,7 +1065,7 @@ class Task(ABC):
             config: Configuration dictionary
         """
         self._config = config
-        self._running = False
+        self._state = Task.State.INIT
 
     @abstractmethod
     async def init(self) -> None:
@@ -1071,25 +1079,36 @@ class Task(ABC):
 
     async def run_in_loop(self) -> None:
         """Run task in loop"""
-        self._running = True
-        while self._running:
+        self._state = Task.State.RUNNING
+        while self._state == Task.State.RUNNING:
             try:
                 await self._run_once()
             except Error as e:
-                self._logger.exception(f'failed to run task loop with code={e.code}, message={e.message}')
-                self._running = False
+                self._logger.exception(f'failed to run task loop with task={self.__class__.__name__}, code={e.code}, message={e.message}')
+                self._state = Task.State.CLOSING
             except Exception as e:
-                self._logger.exception('failed to run task loop')
-                self._running = False
+                self._logger.exception(f'failed to run task loop with task={self.__class__.__name__}')
+                self._state = Task.State.CLOSING
+        try:
+            await self._finalize()
+        except Error as e:
+            self._logger.exception(f'failed to finalize task with task={self.__class__.__name__}, code={e.code}, message={e.message}')
+        except Exception as e:
+            self._logger.exception(f'failed to finalize task with task={self.__class__.__name__}')
+        self._state = Task.State.CLOSED
 
-    async def close(self) -> None:
+    def close(self) -> None:
         """Close task"""
-        self._running = False
-        self._logger.info('task closed')
+        self._state = Task.State.CLOSING
+        self._logger.info(f'task closed with task={self.__class__.__name__}')
 
-    def is_running(self) -> bool:
-        """Whether task is running"""
-        return self._running
+    async def _finalize(self) -> None:
+        """Cleanup the scene after the loop stops, override in subclasses"""
+        pass
+
+    def get_state(self) -> State:
+        """Get the current task state"""
+        return self._state
 ```
 
 ### Step 11: Create app/main.py
